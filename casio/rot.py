@@ -300,3 +300,28 @@ class Des:
         return(
             Matriz.p_m(Des.rotz(theta), Des.trans(a,0,d), Des.rotx(alpha))
         )
+
+    def H_inv(H):
+
+        R = Matriz([
+            [H[0, 0], H[0, 1], H[0, 2]],
+            [H[1, 0], H[1, 1], H[1, 2]],
+            [H[2, 0], H[2, 1], H[2, 2]]
+        ])
+
+        d = Matriz([
+            [H[0, 3]],
+            [H[1, 3]],
+            [H[2, 3]]
+        ])
+
+        RT = Matriz.traspuesta(R)
+
+        d_inv = Matriz.p_m(negativo(RT, d))
+
+        return Matriz([
+            [RT[0, 0], RT[0, 1], RT[0, 2], d_inv[0, 0]],
+            [RT[1, 0], RT[1, 1], RT[1, 2], d_inv[1, 0]],
+            [RT[2, 0], RT[2, 1], RT[2, 2], d_inv[2, 0]],
+            [0,         0,         0,         1]
+        ])
