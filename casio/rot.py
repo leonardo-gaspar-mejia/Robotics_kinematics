@@ -315,7 +315,7 @@ class Des:
             [H[2, 3]]
         ])
 
-        RT = Matriz.traspuesta(R)
+        RT = R.traspuesta()
 
         d_inv = Matriz.p_m(negativo(RT, d))
 
@@ -325,3 +325,38 @@ class Des:
             [RT[2, 0], RT[2, 1], RT[2, 2], d_inv[2, 0]],
             [0,         0,         0,         1]
         ])
+
+    def DH_table(DH_t, mostrar = True):
+
+        if DH_t.columnas != 4:
+            raise ValueError("La tabla DH carece de argumentos(Argumentos necesrios por fila 4)")
+
+        T = Matriz([[1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1]])
+
+        t = []
+
+        t_acumuladas = []
+
+        for i in range(DH_t.filas):
+
+            theta = DH_t[i, 0]
+            d = DH_t[i, 1]
+            a = DH_t[i, 2]
+            alpha = DH_t[i, 3]
+
+            T_i = Des.DH(theta, d, a, alpha)
+
+            if mostrar:
+                print("\nT" + str(i) + str(i + 1) + " =")
+                T_i.mostrar()
+
+            T = Matriz.p_m(T, T_i)
+
+        if mostrar:
+            print("\nT0" + str(DH_t.filas) + " =")
+            T.mostrar()
+
+        return T

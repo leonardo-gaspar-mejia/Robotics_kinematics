@@ -10,5 +10,17 @@ l1 = Syms("l1")
 l2 = Syms("l2")
 l3 = Syms("l3")
 
-T01 = Des.Rot_lt(1,0,0,theta1).mostrar()
+DH = Matriz([[0, l1, 0, grados(90)],
+             [grados(90), l2, 0, grados(90)],
+             [0, l3, 0, 0],])
 
+T03 = Des.DH_table(DH, False)
+
+T01 = Matriz([[1,0,0,0],
+              [0,0,-1,0],
+              [0,1,0,l1],
+              [0,0,0,1],])
+
+T01.mostrar()
+
+T01.traspuesta().mostrar()

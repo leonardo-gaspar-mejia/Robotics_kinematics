@@ -574,28 +574,16 @@ class Matriz:
 
         return resultado
 
-    def traspuesta(H):
+    def traspuesta(self):
 
-        if len(H) == 0:
-            return []
+        datos = []
 
-        filas = len(H)
-        comlumnas = len(H[0])
+        for j in range(self.columnas):
+            fila = []
 
-        for fila in H:
-            if len(fila) != comlumnas:
-                raise ValueError("La matriz no es rectangular")
+            for i in range(self.filas):
+                fila.append(self[i, j])
 
-        HT = []
+            datos.append(fila)
 
-        for j in range(comlumnas):
-            nueva_fila = []
-
-            for i in range(filas):
-                nueva_fila.append(H[i][j])
-
-            HT.append(nueva_fila)
-
-        return HT
-
-    
+        return Matriz(datos)
