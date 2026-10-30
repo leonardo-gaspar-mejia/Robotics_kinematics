@@ -23,7 +23,7 @@ class ExpresionSimbolica:
         return crear_multiplicacion(otra, self)
 
 
-def negativo(expresion):
+def n(expresion):
     return crear_negativo(expresion)
 
 
@@ -300,6 +300,59 @@ def _descomponer_producto(valor):
     # Factor simbolico
     return 1, 1, [valor]
 
+def _agrupar_factores_trigonometricos(factores):
+    resultado = []
+    grupos = []
+    cambio = False
+
+    for factor in factores:
+        base = None
+        exponente = 1
+
+        if isinstance(factor, (Sin, Cos)):
+            base = factor
+
+        elif (
+            isinstance(factor, Potencia)
+            and isinstance(factor.base, (Sin, Cos))
+            and isinstance(factor.exponente, int)
+            and factor.exponente > 0
+        ):
+            base = factor.base
+            exponente = factor.exponente
+
+        if base is None:
+            resultado.append(factor)
+            continue
+
+        tipo = type(base)
+        argumento = str(base.argumento)
+        grupo_encontrado = None
+
+        for grupo in grupos:
+            if grupo[0] == tipo and grupo[1] == argumento:
+                grupo_encontrado = grupo
+                break
+
+        if grupo_encontrado is None:
+            posicion = len(resultado)
+            resultado.append(None)
+            grupos.append([tipo, argumento, base, exponente, posicion])
+        else:
+            grupo_encontrado[3] += exponente
+            cambio = True
+
+    for grupo in grupos:
+        base = grupo[2]
+        exponente = grupo[3]
+        posicion = grupo[4]
+
+        if exponente > 1:
+            resultado[posicion] = Potencia(base, exponente)
+        else:
+            resultado[posicion] = base
+
+    return resultado, cambio
 
 def _claves_factores(factores):
 
@@ -847,6 +900,35 @@ def crear_multiplicacion(a, b):
     a = a_sin_signo
     b = b_sin_signo
 
+    # Detectar productos y potencias anidados
+    if (
+        es_multiplicacion(a)
+        or es_multiplicacion(b)
+        or isinstance(a, Potencia)
+        or isinstance(b, Potencia)
+    ):
+        signo_a, coef_a, factores_a = _descomponer_producto(a)
+        signo_b, coef_b, factores_b = _descomponer_producto(b)
+
+        factores = factores_a + factores_b
+
+        factores, hubo_agrupacion = (
+            _agrupar_factores_trigonometricos(factores)
+        )
+
+        if hubo_agrupacion:
+            resultado = coef_a * coef_b
+
+            for factor in factores:
+                resultado = crear_multiplicacion(
+                    resultado, factor
+                )
+
+            if signo_a * signo_b == -1:
+                resultado = crear_negativo(resultado)
+
+            return resultado
+
     # sin(x) * sin(x) -> sin(x)^2
     # cos(x) * cos(x) -> cos(x)^2
     if str(a) == str(b):
@@ -920,7 +1002,7 @@ def simplificar(expresion):
 
         if isinstance(argumento, Expresion):
             if argumento.operador == "neg":
-                return negativo(Sin(argumento.izquierda))
+                return n(Sin(argumento.izquierda))
 
         return Sin(argumento)
 

@@ -1,5 +1,5 @@
 from matriz import Matriz
-from syms import crear_seno, crear_coseno, negativo, crear_multiplicacion, crear_suma, crear_resta, grados, radianes_a_grados, grados
+from syms import Syms, crear_seno, crear_coseno, n, crear_multiplicacion, crear_suma, crear_resta, grados, radianes_a_grados, grados
 import math
 class Des:
 
@@ -8,7 +8,7 @@ class Des:
         st = crear_seno(t)
 
         return Matriz([
-            [ct, negativo(st), 0, 0],
+            [ct, n(st), 0, 0],
             [st, ct, 0, 0],
             [0, 0, 1, 0],
             [0, 0, 0, 1]
@@ -20,7 +20,7 @@ class Des:
         st = crear_seno(t)
 
         return Matriz([
-            [ct, negativo(st), 0],
+            [ct, n(st), 0],
             [st, ct, 0],
             [0, 0, 1]
         ])
@@ -31,7 +31,7 @@ class Des:
 
         return Matriz([
             [1, 0, 0, 0],
-            [0, ct, negativo(st), 0],
+            [0, ct, n(st), 0],
             [0, st, ct, 0],
             [0, 0, 0, 1]
         ])
@@ -43,7 +43,7 @@ class Des:
 
         return Matriz([
             [1, 0, 0],
-            [0, ct, negativo(st)],
+            [0, ct, n(st)],
             [0, st, ct]
         ])
 
@@ -54,7 +54,7 @@ class Des:
         return Matriz([
             [ct, 0, st, 0],
             [0, 1, 0, 0],
-            [negativo(st), 0, ct, 0],
+            [n(st), 0, ct, 0],
             [0, 0, 0, 1]
         ])
 
@@ -66,7 +66,7 @@ class Des:
         return Matriz([
             [ct, 0, st],
             [0, 1, 0],
-            [negativo(st), 0, ct]
+            [n(st), 0, ct]
         ])
 
     def trans(x, y, z):
@@ -310,9 +310,9 @@ class Des:
         ])
 
         d = Matriz([
-            [negativo(H[0, 3])],
-            [negativo(H[1, 3])],
-            [negativo(H[2, 3])]
+            [n(H[0, 3])],
+            [n(H[1, 3])],
+            [n(H[2, 3])]
         ])
 
         RT = R.traspuesta()
@@ -360,3 +360,29 @@ class Des:
             T.mostrar()
 
         return T
+
+    def nsad():
+
+        nx = Syms("nx")
+        ny = Syms("ny")
+        nz = Syms("nz")
+
+        sx = Syms("sx")
+        sy = Syms("sy")
+        sz = Syms("sz")
+
+        ax = Syms("ax")
+        ay = Syms("ay")
+        az = Syms("az")
+
+        dx = Syms("dx")
+        dy = Syms("dy")
+        dz = Syms("dz")
+
+
+        return Matriz([
+            [nx, sx, ax, dx],
+            [ny, sy, ay, dy],
+            [nz, sz, az, dz],
+            [0, 0, 0, 1]
+        ])

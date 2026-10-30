@@ -330,7 +330,7 @@ class Matriz:
             )
 
             if j < self.columnas - 1:
-                linea = linea + ","
+                linea = linea + ", "
 
         linea = linea + "]"
 
@@ -440,7 +440,7 @@ class Matriz:
             )
 
             if j < self.columnas - 1:
-                linea = linea + ","
+                linea = linea + ", "
 
         linea = linea + "]"
 
