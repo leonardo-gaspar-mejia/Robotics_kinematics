@@ -317,7 +317,7 @@ class Des:
 
         RT = R.traspuesta()
 
-        d_inv = Matriz.p_m(negativo(RT, d))
+        d_inv = Matriz.p_m(RT, d) * -1
 
         return Matriz([
             [RT[0, 0], RT[0, 1], RT[0, 2], d_inv[0, 0]],
