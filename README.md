@@ -64,8 +64,7 @@ Robotics_Toolbox_MicroPython/
 │   ├── matriz.py
 │   ├── rot.py
 │   ├── ejemplo_uso.py
-│   └── Pruebas KhiCAS/
-│       └── ejemplo_uso2.py
+|
 │
 ├── docs/
 │   ├── 01_objetivos.md

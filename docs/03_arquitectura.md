@@ -21,7 +21,8 @@ La versión 1.1 se divide en cuatro componentes principales:
     │     ├── Ry
     │     ├── Rz
     │     ├── RPY
-    │     └── Traslación
+    │     ├── Traslación
+    |     └── Etc.
     │
     └── Presentación
           └── formato.py

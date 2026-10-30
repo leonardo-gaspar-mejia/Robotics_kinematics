@@ -49,7 +49,7 @@ Estas funciones reducen la dependencia del despacho automático del intérprete.
 
 La negación unaria también presentó limitaciones. Por ello se utiliza:
 
-    negativo(expresion)
+    n(expresion)
 
 en lugar de depender exclusivamente de:
 
