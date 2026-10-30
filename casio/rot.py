@@ -310,14 +310,14 @@ class Des:
         ])
 
         d = Matriz([
-            [H[0, 3]],
-            [H[1, 3]],
-            [H[2, 3]]
+            [negativo(H[0, 3])],
+            [negativo(H[1, 3])],
+            [negativo(H[2, 3])]
         ])
 
         RT = R.traspuesta()
 
-        d_inv = Matriz.p_m(RT, d) * -1
+        d_inv = Matriz.p_m(RT, d)
 
         return Matriz([
             [RT[0, 0], RT[0, 1], RT[0, 2], d_inv[0, 0]],
