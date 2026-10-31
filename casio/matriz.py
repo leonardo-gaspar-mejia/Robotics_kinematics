@@ -516,63 +516,72 @@ class Matriz:
 
         # Matriz 1x1
         if self.filas == 1:
-
             return self[0, 0]
 
         # Matriz 2x2
         if self.filas == 2:
 
-            a = self[0, 0]
-            b = self[0, 1]
-            c = self[1, 0]
-            d = self[1, 1]
-
-            return (
-                a * d
-                - b * c
+            return resta(
+                producto(self[0, 0], self[1, 1]),
+                producto(self[0, 1], self[1, 0])
             )
 
-        # Matriz 3x3
-        if self.filas == 3:
+        # Desarrollo por cofactores
+        resultado = 0
 
-            a = self[0, 0]
-            b = self[0, 1]
-            c = self[0, 2]
+        for j in range(self.columnas):
 
-            d = self[1, 0]
-            e = self[1, 1]
-            f = self[1, 2]
+            elemento = self[0, j]
 
-            g = self[2, 0]
-            h = self[2, 1]
-            i = self[2, 2]
+            if es_cero(elemento):
+                continue
 
-            return (
-                a * (e * i - f * h)
-                - b * (d * i - f * g)
-                + c * (d * h - e * g)
+            # Construir el menor
+            datos = []
+
+            for i in range(1, self.filas):
+
+                fila = []
+
+                for k in range(self.columnas):
+
+                    if k != j:
+                        fila.append(self[i, k])
+
+                datos.append(fila)
+
+            menor = Matriz(datos)
+
+            # Multiplicar por el determinante del menor
+            termino = producto(
+                elemento,
+                menor.determinante()
             )
 
-        raise NotImplementedError(
-            "Determinante implementado hasta matrices 3x3"
-        )
-
-
-    def p_m(*matrices):
-
-        if len(matrices) == 0:
-            return None
-
-        resultado = matrices[0]
-
-        for matriz in matrices[1:]:
-
-            resultado = Matriz.__mul__(
-                resultado,
-                matriz
-            )
+            # Alternar signos de los cofactores
+            if j % 2 == 0:
+                resultado = suma(resultado, termino)
+            else:
+                resultado = resta(resultado, termino)
 
         return resultado
+
+
+        def p_m(*matrices):
+
+            if len(matrices) == 0:
+                return None
+
+            resultado = matrices[0]
+
+            for matriz in matrices[1:]:
+
+                resultado = Matriz.__mul__(
+                    resultado,
+                    matriz
+                )
+
+            return resultado
 
     def traspuesta(self):
 
