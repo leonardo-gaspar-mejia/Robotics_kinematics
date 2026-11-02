@@ -1,4 +1,4 @@
-from syms import suma, resta, producto, es_cero, es_uno, evaluar
+from syms import suma, resta, producto, es_cero, es_uno, evaluar, simplificar as simplificar_expresion, ExpresionSimbolica, _mismo_termino
 from formato import texto_compacto, crear_mapa_compacto
 
 
@@ -93,6 +93,8 @@ def crear_multiplicacion_matriz(a, b):
 
 
 class Matriz:
+
+    _es_matriz = True
 
     def __init__(self, data):
 
@@ -209,39 +211,39 @@ class Matriz:
 
     def __mul__(self, otra):
 
-        # Matriz por escalar
-        if isinstance(otra, (int, float)):
-
-            resultado = []
-
-            for i in range(self.filas):
-
-                fila = []
-
-                for j in range(self.columnas):
-
-                    fila.append(
-                        producto(
-                            self[i, j],
-                            otra
-                        )
-                    )
-
-                resultado.append(fila)
-
-            return Matriz(resultado)
-
-        # Matriz por matriz
         if isinstance(otra, Matriz):
+            return crear_multiplicacion_matriz(self, otra)
 
-            return crear_multiplicacion_matriz(
-                self,
-                otra
-            )
+        return self.multiplicar_escalar(otra)
 
-        raise TypeError(
-            "Tipo no soportado para multiplicacion"
-        )
+
+    def __rmul__(self, otra):
+
+        return self.multiplicar_escalar(otra, izquierda=True)
+
+    def __eq__(self, otra):
+
+        if not isinstance(otra, Matriz):
+            return False
+
+        if self.filas != otra.filas or self.columnas != otra.columnas:
+            return False
+
+        for i in range(self.filas):
+            for j in range(self.columnas):
+
+                a = self[i, j]
+                b = otra[i, j]
+
+                if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+
+                    if a != b:
+                        return False
+
+                elif not _mismo_termino(a, b):
+                    return False
+
+        return True
 
 
     def evaluar_numerico(self, valores=None):
@@ -309,7 +311,7 @@ class Matriz:
             )
 
             if j < self.columnas - 1:
-                longitud = longitud + 1
+                longitud = longitud + 2
 
         return longitud
 
@@ -419,7 +421,7 @@ class Matriz:
             )
 
             if j < self.columnas - 1:
-                longitud = longitud + 1
+                longitud = longitud + 2
 
         return longitud
 
@@ -510,78 +512,132 @@ class Matriz:
     def determinante(self):
 
         if self.filas != self.columnas:
-            raise ValueError(
-                "La matriz debe ser cuadrada"
-            )
+            raise ValueError("La matriz debe ser cuadrada")
 
-        # Matriz 1x1
+        # Casos base
         if self.filas == 1:
-            return self[0, 0]
+            return simplificar_expresion(self[0, 0])
 
-        # Matriz 2x2
         if self.filas == 2:
-
-            return resta(
-                producto(self[0, 0], self[1, 1]),
-                producto(self[0, 1], self[1, 0])
+            diagonal_principal = producto(
+                self[0, 0],
+                self[1, 1]
             )
 
-        # Desarrollo por cofactores
-        resultado = 0
+            diagonal_secundaria = producto(
+                self[0, 1],
+                self[1, 0]
+            )
+
+            return simplificar_expresion(
+                resta(diagonal_principal, diagonal_secundaria)
+            )
+
+        # Buscar la fila o columna con más ceros.
+        tipo_expansion = "fila"
+        indice_expansion = 0
+        max_ceros = -1
+
+        for i in range(self.filas):
+
+            ceros = 0
+
+            for j in range(self.columnas):
+                if es_cero(self[i, j]):
+                    ceros += 1
+
+            if ceros > max_ceros:
+                max_ceros = ceros
+                tipo_expansion = "fila"
+                indice_expansion = i
 
         for j in range(self.columnas):
 
-            elemento = self[0, j]
+            ceros = 0
+
+            for i in range(self.filas):
+                if es_cero(self[i, j]):
+                    ceros += 1
+
+            if ceros > max_ceros:
+                max_ceros = ceros
+                tipo_expansion = "columna"
+                indice_expansion = j
+
+        # Si la mejor línea contiene únicamente ceros.
+        if max_ceros == self.filas:
+            return 0
+
+        terminos = []
+
+        if tipo_expansion == "fila":
+            posiciones = [
+                (indice_expansion, j)
+                for j in range(self.columnas)
+            ]
+        else:
+            posiciones = [
+                (i, indice_expansion)
+                for i in range(self.filas)
+            ]
+
+        # Desarrollo por cofactores.
+        for fila_elemento, columna_elemento in posiciones:
+
+            elemento = self[fila_elemento, columna_elemento]
 
             if es_cero(elemento):
                 continue
 
-            # Construir el menor
             datos = []
 
-            for i in range(1, self.filas):
+            for i in range(self.filas):
+
+                if i == fila_elemento:
+                    continue
 
                 fila = []
 
-                for k in range(self.columnas):
+                for j in range(self.columnas):
 
-                    if k != j:
-                        fila.append(self[i, k])
+                    if j != columna_elemento:
+                        fila.append(self[i, j])
 
                 datos.append(fila)
 
             menor = Matriz(datos)
 
-            # Multiplicar por el determinante del menor
             termino = producto(
                 elemento,
                 menor.determinante()
             )
 
-            # Alternar signos de los cofactores
-            if j % 2 == 0:
-                resultado = suma(resultado, termino)
-            else:
-                resultado = resta(resultado, termino)
+            if (fila_elemento + columna_elemento) % 2 != 0:
+                termino = resta(0, termino)
+
+            terminos.append(termino)
+
+        if len(terminos) == 0:
+            return 0
+
+        return simplificar_expresion(suma(*terminos))
+
+
+    def p_m(*matrices):
+
+        if len(matrices) == 0:
+            return None
+
+        resultado = matrices[0]
+
+        for matriz in matrices[1:]:
+
+            resultado = Matriz.__mul__(
+                resultado,
+                matriz
+            )
 
         return resultado
-
-
-        def p_m(*matrices):
-
-            if len(matrices) == 0:
-                return None
-
-            resultado = matrices[0]
-
-            for matriz in matrices[1:]:
-
-                resultado = Matriz.__mul__(
-                    resultado,
-                    matriz
-                )
-
-            return resultado
 
     def traspuesta(self):
 
@@ -596,3 +652,44 @@ class Matriz:
             datos.append(fila)
 
         return Matriz(datos)
+
+    def simplificar_m(self):
+
+        resultado = []
+
+        for i in range(self.filas):
+
+            fila = []
+
+            for j in range(self.columnas):
+                fila.append(
+                    simplificar_expresion(self[i, j])
+                )
+
+            resultado.append(fila)
+
+        return Matriz(resultado)
+
+    def multiplicar_escalar(self, escalar, izquierda=False):
+
+        if not isinstance(escalar, (int, float, ExpresionSimbolica)):
+            raise TypeError("El escalar debe ser numerico o simbolico")
+
+        resultado = []
+
+        for i in range(self.filas):
+
+            fila = []
+
+            for j in range(self.columnas):
+
+                if izquierda:
+                    valor = producto(escalar, self[i, j])
+                else:
+                    valor = producto(self[i, j], escalar)
+
+                fila.append(valor)
+
+            resultado.append(fila)
+
+        return Matriz(resultado)

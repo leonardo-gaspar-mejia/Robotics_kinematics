@@ -82,9 +82,9 @@ class Des:
             [0, 0, 0, 1]
         ])
 
-    def Rot_RPY(psi, theta, phi):
+    def Rot_RPY(phi, theta, psi):
 
-        return Matriz.p_m(Des.rotz3(psi), Des.roty3(theta), Des.rotx3(phi))
+        return Matriz.p_m(Des.rotz3(phi), Des.roty3(theta), Des.rotx3(psi))
 
     def Rot_RPY_grados(phi, theta, psi):
 
@@ -99,7 +99,7 @@ class Des:
         ct = crear_coseno(theta)
         st = crear_seno(theta)
 
-        vtheta = ct.__rsub__(1)
+        vtheta =  crear_resta(1, ct)
 
         return Matriz([
             [crear_suma(crear_multiplicacion(crear_multiplicacion(lx, lx), vtheta), ct), crear_resta(crear_multiplicacion(crear_multiplicacion(lx, ly), vtheta), crear_multiplicacion(lz, st)), crear_suma(crear_multiplicacion(crear_multiplicacion(lx, lz), vtheta), crear_multiplicacion(ly, st))],
@@ -114,84 +114,107 @@ class Des:
             [H[2, 0], H[2, 1], H[2, 2]]
         ])
 
-
         traza = R[0, 0] + R[1, 1] + R[2, 2]
 
         cos_theta = (traza - 1) / 2.0
+
         if cos_theta > 1:
             cos_theta = 1
 
         if cos_theta < -1:
             cos_theta = -1
 
-        theta = math.acos(cos_theta)
+        vx = R[2, 1] - R[1, 2]
+        vy = R[0, 2] - R[2, 0]
+        vz = R[1, 0] - R[0, 1]
 
-        # Detectar theta = pi
+        sin_theta = math.sqrt(vx**2 + vy**2 + vz**2) / 2.0
 
+        theta = math.atan2(sin_theta, cos_theta)
 
         tolerancia = 1e-9
 
-        tolerancia_imprimible = 1e-3
+        # Caso especial: rotacion nula
+        if theta <= tolerancia:
 
-        
+            if mostrar:
+                print("Rotacion nula")
+
+            return 0.0, 0.0, 0.0, theta
 
         if abs(cos_theta + 1) < tolerancia:
 
-            # Caso especial:
-            # theta = pi
+            # Caso especial: theta = pi
 
-            lx = math.sqrt((R[0, 0] + 1) / 2.0)
-            ly = math.sqrt((R[1, 1] + 1) / 2.0)
-            lz = math.sqrt((R[2, 2] + 1) / 2.0)
+            dx = (R[0, 0] + 1) / 2.0
+            dy = (R[1, 1] + 1) / 2.0
+            dz = (R[2, 2] + 1) / 2.0
 
-            print("CASO ESPECIAL: theta = pi o 180")
-            print("Solo se obtienen magnitudes de lambda:")
-            print("|lx| =", lx)
-            print("|ly| =", ly)
-            print("|lz| =", lz)
-            print("Los signos deben determinarse aparte.")
+            # Elegir el componente de mayor magnitud
+            # para evitar divisiones entre valores cercanos a cero.
+
+            if dx >= dy and dx >= dz:
+
+                lx = math.sqrt(max(0.0, dx))
+
+                ly = (R[0, 1] + R[1, 0]) / (4.0 * lx)
+                lz = (R[0, 2] + R[2, 0]) / (4.0 * lx)
+
+            elif dy >= dz:
+
+                ly = math.sqrt(max(0.0, dy))
+
+                lx = (R[0, 1] + R[1, 0]) / (4.0 * ly)
+                lz = (R[1, 2] + R[2, 1]) / (4.0 * ly)
+
+            else:
+
+                lz = math.sqrt(max(0.0, dz))
+
+                lx = (R[0, 2] + R[2, 0]) / (4.0 * lz)
+                ly = (R[1, 2] + R[2, 1]) / (4.0 * lz)
+
+            # Normalizar para compensar errores numericos
+            norma = math.sqrt(lx**2 + ly**2 + lz**2)
+
+            lx /= norma
+            ly /= norma
+            lz /= norma
+
+            if mostrar:
+                print("Caso especial: theta = pi")
+                print("lx =", lx)
+                print("ly =", ly)
+                print("lz =", lz)
 
             return lx, ly, lz, theta
 
-        # . Caso general
+        # Caso general
+        denominador = 2.0 * sin_theta
 
+        lx = vx / denominador
+        ly = vy / denominador
+        lz = vz / denominador
 
-        sin_theta = math.sin(theta)
-
-        lx = (R[2, 1] - R[1, 2]) / (2.0 * sin_theta)
-
-        ly = (R[0, 2] - R[2, 0]) / (2.0 * sin_theta)
-
-        lz = (R[1, 0] - R[0, 1]) / (2.0 * sin_theta)
-
-        theta_mostrar = theta
-
-        if abs(theta_mostrar) < tolerancia_imprimible:
-            theta_mostrar = 0.0
-
-        print("Caso general:")
-        print("lx =", lx)
-        print("ly =", ly)
-        print("lz =", lz)
         if mostrar:
+            print("Caso general:")
+            print("lx =", lx)
+            print("ly =", ly)
+            print("lz =", lz)
+            print("theta =", theta)
 
-            print("theta =", theta_mostrar)
-
-        return lx, ly, lz, theta_mostrar
+        return lx, ly, lz, theta
 
 
     def LT_grados(H):
+
         lx, ly, lz, theta = Des.LT(H, False)
 
-        theta_grados = theta
+        theta_grados = radianes_a_grados(theta)
 
-        if abs(theta) < 1e-3:
-           theta_grados = 0.0
+        print("Theta =", theta_grados, "grados")
 
-
-        print("Theta =", radianes_a_grados(theta_grados), "grados")
-
-        return lx, ly, lz, radianes_a_grados(theta_grados)
+        return lx, ly, lz, theta_grados
 
 
     def RPY(H, mostrar = True):
@@ -275,25 +298,15 @@ class Des:
     def RPY_grados(H):
         Roll, Pitch, Yaw = Des.RPY(H, False)
 
-        print("Roll: ", radianes_a_grados(Roll))
-        print("Pitch: ", radianes_a_grados(Pitch))
-        print("Yaw: ", radianes_a_grados(Yaw))
+        roll_grados = radianes_a_grados(Roll)
+        pitch_grados = radianes_a_grados(Pitch)
+        yaw_grados = radianes_a_grados(Yaw)
 
-    def camara(L, A, B):
+        print("Roll: ", roll_grados)
+        print("Pitch: ", pitch_grados)
+        print("Yaw: ", yaw_grados)
 
-        return Matriz.p_m(
-            Des.rotz(A),
-            Des.rotx(-grados(90) - B),
-            Des.trans(0, 0, -L)
-        )
-
-    def camara_grados(L, A, B):
-
-        return Des.camara(
-            L,
-            grados(A),
-            grados(B)
-        )
+        return roll_grados, pitch_grados, yaw_grados
 
     def DH(theta,d,a,alpha):
 

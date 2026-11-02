@@ -1,2 +1,12 @@
-test/
+# Python bytecode and caches
 __pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local development environments
+.venv/
+venv/
+
+# Coverage output
+.coverage
+htmlcov/

@@ -1,153 +1,199 @@
-Changelog
+# Registro de cambios / Changelog
 
-[1.0] - 2026-09-14
+Este archivo mantiene el historial de versiones en español e inglés. / This file keeps the version history in Spanish and English.
 
-Primera versión funcional del núcleo de la Casio Robotics Toolbox.
+---
 
-Añadido
+# Español
 
-Motor simbólico ligero.
+## [1.2] - 2026-10-31
 
-Variables simbólicas mediante Syms.
+Versión que amplía la toolbox desde las operaciones matriciales y transformaciones hacia derivación simbólica limitada y cálculo del Jacobiano. Las correcciones de mantenimiento y documentación que se preparan sobre esta versión no implican un incremento de versión.
 
-Expresiones mediante Expresion.
+### Añadido
 
-Funciones Sin y Cos.
+- Módulo `derivadas.py` con la clase `Derivador` y reglas para constantes, variables, suma, resta, producto, seno, coseno y potencias con exponente constante.
+- Regla de la cadena recursiva para las estructuras simbólicas soportadas por `Derivador`.
+- Módulo `jacobiano.py` con `Jacobiano(funciones, variables)` para vectores columna.
+- Construcción de transformaciones Denavit–Hartenberg con `Des.DH()` y composición mediante `Des.DH_table()`.
+- Inversa de transformaciones rígidas homogéneas mediante `Des.H_inv()`.
+- Comparación estructural de matrices y expresiones simbólicas.
+- `Matriz.simplificar_m()`, que crea una matriz nueva sin modificar la original.
+- Multiplicación por escalar mediante `Matriz.multiplicar_escalar()`.
+- Pruebas manuales para la calculadora y pruebas automáticas para PC.
 
-Clase Potencia.
+### Mejorado
 
-Suma, resta y multiplicación simbólicas.
+- Determinantes para matrices cuadradas de orden N mediante expansión por cofactores, con casos directos para 1×1 y 2×2 y selección de fila o columna con más ceros explícitos.
+- Simplificación de los resultados del determinante y soporte de expresiones simbólicas.
+- Comparaciones algebraicas y trigonométricas basadas en la estructura de los objetos, reduciendo el uso de conversiones a texto como criterio de igualdad.
+- Expansión distributiva limitada a 16 términos para evitar crecimiento excesivo de expresiones.
+- Representación de potencias con paréntesis para conservar el significado de bases y exponentes compuestos.
+- Cálculo de longitud de fila en los formatos de presentación, contando correctamente el separador `, `.
+- Corrección del ejemplo `casio/ejemplo_uso.py`: se eliminó una llamada de instancia inválida a `Matriz.mostrar()` sin proporcionar una matriz.
+- Pruebas de integración de un manipulador planar 2R.
 
-Simplificación algebraica básica.
+### Pruebas
 
-Simplificaciones trigonométricas especializadas.
+- 24 grupos de pruebas manuales en `testInCasio/`, cuya ejecución en la Casio fx-CG50 fue confirmada por el autor.
+- 62 pruebas automáticas con `pytest` en PC; pasan en el árbol de trabajo revisado.
+- Configuración de GitHub Actions para ejecutar la batería automática ante eventos `push` y `pull_request`.
 
-Evaluación numérica de expresiones.
+### Compatibilidad y alcance
 
-Clase Matriz.
+- La fx-CG50 continúa siendo la plataforma de ejecución principal.
+- La derivación simbólica es deliberadamente limitada y no constituye un CAS general.
+- El determinante admite orden N, pero la expansión por cofactores tiene crecimiento factorial en el peor caso y no es adecuada para matrices densas grandes en la calculadora.
+- KhiCAS/Xcas permanece como exploración externa; el núcleo no depende de él.
 
-Suma y resta matricial.
-
-Multiplicación por escalar.
-
-Multiplicación matricial.
-
-Transposición.
-
-Determinante hasta 3x3.
-
-Evaluación numérica de matrices.
-
-Composición mediante Matriz.p_m().
-
-Rotaciones homogéneas Rx, Ry y Rz.
-
-Rotaciones 3x3.
-
-Traslaciones homogéneas.
-
-Composición RPY.
-
-Convención RPY Rz(phi) · Ry(theta) · Rx(psi).
-
-Convención angular en radianes.
-
-Conversión explícita de grados mediante grados().
-
-Presentación matricial sin utilizar str.rjust().
-
-Compatibilidad
-
-Adaptaciones específicas para las limitaciones observadas en la fx-CG50.
-
-Uso de funciones auxiliares para reducir la dependencia del despacho automático de operadores.
-
-Experimental
-
-Pruebas iniciales de integración con KhiCAS MicroPython 1.12.
-
-Acceso experimental al motor Xcas mediante cas.caseval().
-
-La integración con KhiCAS permanece fuera del núcleo estable de la versión 1.0.
-
-[1.1] - 2026-09-26
+## [1.1] - 2026-09-26
 
 Segunda versión orientada a mejorar la presentación de matrices simbólicas en la Casio fx-CG50, manteniendo el núcleo matemático de la versión 1.0.
 
-Añadido
+### Añadido
 
-Separación de la lógica de presentación simbólica en un módulo independiente formato.py.
+- Separación de la lógica de presentación simbólica en un módulo independiente `formato.py`.
+- Funciones de formato compacto: `_nombre_compacto()`, `_agregar_nombre_simbolico()`, `_recoger_nombres_simbolicos()`, `crear_mapa_compacto()`, `_compacto_parentesis_suma()`, `_unir_productos_compactos()` y `texto_compacto()`.
+- Selección automática entre dos niveles de presentación en `Matriz.mostrar()`.
+- Nivel 0: representación simbólica completa.
+- Nivel 1: representación simbólica compacta cuando una fila supera el umbral de presentación del Nivel 0.
+- Compactación de funciones trigonométricas: `cos(x)` → `c(x)` y `sin(x)` → `s(x)`.
+- Compactación de nombres simbólicos cuando la abreviación es inequívoca, por ejemplo `theta1` → `t1` y `alpha2` → `a2`.
+- Protección contra abreviaciones ambiguas.
+- Pruebas específicas para la selección entre Nivel 0 y Nivel 1.
 
-Funciones de formato compacto:
+### Mejorado
 
-_nombre_compacto()
+- Eliminación de espacios de relleno y alineación artificial entre columnas para reducir el ancho horizontal de la salida destinada a la calculadora.
+- `syms.py` permanece dedicado al motor simbólico; `matriz.py` conserva las operaciones matriciales y decide el nivel de presentación; `formato.py` concentra la lógica de representación compacta.
 
-_agregar_nombre_simbolico()
+### Evidencia experimental
 
-_recoger_nombres_simbolicos()
+- En una caracterización anterior, una fila de 509 caracteres se construyó e imprimió cuatro veces consecutivas sin errores observables.
+- Una fila de 510 caracteres produjo un fallo en la representación utilizada en aquella prueba.
+- La prueba se realizó con un formato que aún contenía espacios de relleno. El resultado 509/510 es evidencia histórica, no un límite físico universal de la fx-CG50.
+- La caracterización anterior de `T06` registró elementos de hasta aproximadamente 180 caracteres y una fila de aproximadamente 589 caracteres.
 
-crear_mapa_compacto()
+La versión 1.1 mantiene dos niveles de presentación: expresión completa y expresión compacta. Un tercer nivel no está implementado.
 
-_compacto_parentesis_suma()
+## [1.0] - 2026-09-14
 
-_unir_productos_compactos()
+Primera versión funcional del núcleo de la Casio Robotics Toolbox.
 
-texto_compacto()
+### Añadido
 
-Selección automática entre dos niveles de presentación en Matriz.mostrar().
+- Motor simbólico ligero con `Syms`, `Expresion`, `Sin`, `Cos` y `Potencia`.
+- Suma, resta y multiplicación simbólicas.
+- Simplificación algebraica básica y simplificaciones trigonométricas especializadas.
+- Evaluación numérica de expresiones.
+- Clase `Matriz` con suma, resta, multiplicación por escalar, multiplicación matricial y transposición.
+- Determinantes hasta 3×3.
+- Evaluación numérica de matrices y composición mediante `Matriz.p_m()`.
+- Rotaciones homogéneas Rx, Ry y Rz; rotaciones 3×3 y traslaciones homogéneas.
+- Composición RPY `Rz(phi) · Ry(theta) · Rx(psi)`.
+- Convención angular en radianes y conversión explícita mediante `grados()`.
+- Presentación matricial sin utilizar `str.rjust()`.
 
-Nivel 0: representación simbólica completa.
+### Compatibilidad y exploración
 
-Nivel 1: representación simbólica compacta cuando una fila supera el límite de presentación del Nivel 0.
+- Adaptaciones específicas para las limitaciones observadas en la fx-CG50.
+- Funciones auxiliares para reducir la dependencia del despacho automático de operadores.
+- Pruebas iniciales independientes con KhiCAS MicroPython 1.12 y acceso experimental a Xcas mediante `cas.caseval()`. Esta exploración permaneció fuera del núcleo estable.
 
-Compactación de funciones trigonométricas:
+---
 
-cos(x) → c(x)
+# English
 
-sin(x) → s(x)
+## [1.2] - 2026-10-31
 
-Compactación de nombres simbólicos cuando la abreviación es inequívoca, por ejemplo:
+This version extends the toolbox from matrix operations and transformations to limited symbolic differentiation and Jacobian calculation. Maintenance and documentation work prepared on top of this version does not imply a version increment.
 
-theta1 → t1
+### Added
 
-alpha2 → a2
+- `derivadas.py` module with the `Derivador` class and rules for constants, variables, addition, subtraction, products, sine, cosine, and powers with constant exponents.
+- Recursive chain-rule support for the symbolic structures supported by `Derivador`.
+- `jacobiano.py` module with `Jacobiano(funciones, variables)` for column vectors.
+- Denavit–Hartenberg transformation construction through `Des.DH()` and composition through `Des.DH_table()`.
+- Inversion of rigid homogeneous transformations through `Des.H_inv()`.
+- Structural comparison of matrices and symbolic expressions.
+- `Matriz.simplificar_m()`, which creates a new matrix without modifying the original.
+- Scalar multiplication through `Matriz.multiplicar_escalar()`.
+- Manual tests for the calculator and automated tests for desktop Python.
 
-Protección contra abreviaciones ambiguas.
+### Improved
 
-Eliminación de espacios de relleno y alineación artificial entre columnas para la salida destinada a la Casio, con el objetivo de reducir el ancho horizontal ocupado y evitar desplazamientos innecesarios.
+- Determinants for square matrices of order N through cofactor expansion, with direct cases for 1×1 and 2×2 matrices and selection of a row or column containing the largest number of explicit zeros.
+- Simplification of determinant results and support for symbolic expressions.
+- Algebraic and trigonometric comparisons based on object structure, reducing reliance on text conversion as an equality criterion.
+- Distributive expansion limited to 16 terms to prevent excessive expression growth.
+- Power representation with parentheses to preserve the meaning of composite bases and exponents.
+- Row-length calculation in presentation formats, correctly counting the `, ` separator.
+- `casio/ejemplo_uso.py` example correction: an invalid instance call to `Matriz.mostrar()` without a matrix instance was removed.
+- Integration tests for a planar 2R manipulator.
 
-Pruebas específicas para la selección entre Nivel 0 y Nivel 1.
+### Tests
 
-Evidencia experimental
+- 24 groups of manual tests in `testInCasio/`, whose execution on the Casio fx-CG50 was confirmed by the author.
+- 62 automated `pytest` tests on desktop Python; they pass in the reviewed working tree.
+- GitHub Actions configuration to run the automated suite on `push` and `pull_request` events.
 
-Durante la caracterización de la salida anterior se observó que una fila de 509 caracteres podía ser construida e impresa correctamente.
+### Compatibility and scope
 
-La misma impresión de 509 caracteres se realizó cuatro veces consecutivas sin errores observables.
+- The fx-CG50 remains the primary execution platform.
+- Symbolic differentiation is deliberately limited and is not a general-purpose CAS.
+- Determinants support order N, but cofactor expansion has factorial worst-case growth and is not suitable for large dense matrices on the calculator.
+- KhiCAS/Xcas remains an external exploration; the core does not depend on it.
 
-Una fila de 510 caracteres produjo un fallo.
+## [1.1] - 2026-09-26
 
-Este resultado se conserva como evidencia experimental de la arquitectura previa.
+The second version focused on improving symbolic matrix presentation on the Casio fx-CG50 while retaining the mathematical core of version 1.0.
 
-Debido al cambio de formato de salida en la versión 1.1, el umbral de 509 caracteres debe volver a validarse directamente en la fx-CG50 para la nueva representación sin espacios de relleno.
+### Added
 
-La caracterización previa de T06 registró elementos de hasta aproximadamente 180 caracteres y filas de hasta aproximadamente 589 caracteres en la representación completa anterior.
+- Separation of symbolic presentation logic into the independent `formato.py` module.
+- Compact-format functions: `_nombre_compacto()`, `_agregar_nombre_simbolico()`, `_recoger_nombres_simbolicos()`, `crear_mapa_compacto()`, `_compacto_parentesis_suma()`, `_unir_productos_compactos()`, and `texto_compacto()`.
+- Automatic selection between two presentation levels in `Matriz.mostrar()`.
+- Level 0: full symbolic representation.
+- Level 1: compact symbolic representation when a row exceeds the Level 0 presentation threshold.
+- Trigonometric compaction: `cos(x)` → `c(x)` and `sin(x)` → `s(x)`.
+- Symbolic-name compaction when an abbreviation is unambiguous, for example `theta1` → `t1` and `alpha2` → `a2`.
+- Protection against ambiguous abbreviations.
+- Specific tests for selection between Level 0 and Level 1.
 
-Arquitectura de presentación
+### Improved
 
-La versión 1.1 mantiene únicamente dos niveles de presentación:
+- Removal of padding spaces and artificial column alignment to reduce the horizontal width of calculator output.
+- `syms.py` remains dedicated to the symbolic engine; `matriz.py` retains matrix operations and selects the presentation level; `formato.py` contains compact-format logic.
 
-Nivel 0: expresión completa.
+### Experimental evidence
 
-Nivel 1: expresión compacta.
+- In an earlier characterization, a 509-character row was built and printed four consecutive times without observable errors.
+- A 510-character row caused a failure in the representation used in that test.
+- The test used a format that still included padding spaces. The 509/510 result is historical evidence, not a universal physical limit of the fx-CG50.
+- Earlier `T06` characterization recorded elements up to approximately 180 characters and a row of approximately 589 characters.
 
-No se implementa un tercer nivel de compactación en esta versión. Su necesidad se evaluará únicamente a partir de pruebas reales de uso de la librería en la Casio fx-CG50.
+Version 1.1 maintains two presentation levels: full expression and compact expression. A third level is not implemented.
 
-Compatibilidad y diseño
+## [1.0] - 2026-09-14
 
-syms.py permanece dedicado al motor simbólico y no contiene la lógica de formato compacto.
+First functional version of the Casio Robotics Toolbox core.
 
-matriz.py conserva las operaciones matriciales y decide qué nivel de presentación utilizar.
+### Added
 
-formato.py concentra las transformaciones necesarias exclusivamente para la representación compacta.
+- Lightweight symbolic engine with `Syms`, `Expresion`, `Sin`, `Cos`, and `Potencia`.
+- Symbolic addition, subtraction, and multiplication.
+- Basic algebraic and specialized trigonometric simplification.
+- Numerical evaluation of expressions.
+- `Matriz` class with matrix addition, subtraction, scalar multiplication, matrix multiplication, and transposition.
+- Determinants up to 3×3.
+- Numerical matrix evaluation and product composition through `Matriz.p_m()`.
+- Homogeneous rotations Rx, Ry, and Rz; 3×3 rotations; and homogeneous translations.
+- RPY composition `Rz(phi) · Ry(theta) · Rx(psi)`.
+- Radian angular convention and explicit degree conversion through `grados()`.
+- Matrix presentation without using `str.rjust()`.
 
-La versión 1.1 mantiene como base las funcionalidades documentadas en la versión 1.0.
+### Compatibility and exploration
+
+- Adaptations for limitations observed on the fx-CG50.
+- Helper functions to reduce reliance on automatic operator dispatch.
+- Independent initial experiments with KhiCAS MicroPython 1.12 and experimental Xcas access through `cas.caseval()`. This exploration remained outside the stable core.

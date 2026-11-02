@@ -4,6 +4,9 @@ pi = math.pi
 
 class ExpresionSimbolica:
 
+    def __neg__(self):
+        return crear_negativo(self)
+
     def __add__(self, otra):
         return crear_suma(self, otra)
 
@@ -17,10 +20,17 @@ class ExpresionSimbolica:
         return crear_resta(otra, self)
 
     def __mul__(self, otra):
+
+        if getattr(otra, "_es_matriz", False):
+            return otra.multiplicar_escalar(self, izquierda=True)
+
         return crear_multiplicacion(self, otra)
 
     def __rmul__(self, otra):
         return crear_multiplicacion(otra, self)
+    
+    def __repr__(self):
+        return str(self)
 
 
 def n(expresion):
@@ -104,19 +114,28 @@ def _redondear(valor):
 
     return redondeado
 
+
+
 def crear_seno(argumento):
-    """Sin(x) toma el argumento numerico en RADIANES (convencion estandar)."""
 
     if es_numero(argumento):
         return _redondear(math.sin(argumento))
 
+    # sin(-x) = -sin(x)
+    if isinstance(argumento, Expresion) and argumento.operador == "neg":
+        return crear_negativo(crear_seno(argumento.izquierda))
+
     return Sin(argumento)
 
+
 def crear_coseno(argumento):
-    """Version coseno de crear_seno(). Ver ese docstring."""
 
     if es_numero(argumento):
         return _redondear(math.cos(argumento))
+
+    # cos(-x) = cos(x)
+    if isinstance(argumento, Expresion) and argumento.operador == "neg":
+        return crear_coseno(argumento.izquierda)
 
     return Cos(argumento)
 
@@ -141,13 +160,25 @@ class Cos(ExpresionSimbolica):
 
 class Potencia(ExpresionSimbolica):
 
-
     def __init__(self, base, exponente):
         self.base = base
         self.exponente = exponente
 
     def __str__(self):
-        return str(self.base) + "^" + str(self.exponente)
+        base = str(self.base)
+        exponente = str(self.exponente)
+
+        # Agrupar bases que contienen operaciones.
+        if isinstance(self.base, (Expresion, Potencia)):
+            base = "(" + base + ")"
+        elif es_numero(self.base) and self.base < 0:
+            base = "(" + base + ")"
+
+        # Agrupar exponentes compuestos.
+        if isinstance(self.exponente, (Expresion, Potencia)):
+            exponente = "(" + exponente + ")"
+
+        return base + "^" + exponente
 
 
 def evaluar(expresion, valores=None):
@@ -172,7 +203,8 @@ def evaluar(expresion, valores=None):
 
     if isinstance(expresion, Potencia):
         base = evaluar(expresion.base, valores)
-        return base ** expresion.exponente
+        exponente = evaluar(expresion.exponente, valores)
+        return base ** exponente
 
     if isinstance(expresion, Sin):
         return crear_seno(evaluar(expresion.argumento, valores))
@@ -300,6 +332,109 @@ def _descomponer_producto(valor):
     # Factor simbolico
     return 1, 1, [valor]
 
+def _agrupar_factores(factores):
+    """Agrupa factores repetidos y suma exponentes enteros."""
+
+    grupos = []
+
+    for factor in factores:
+
+        if (
+            isinstance(factor, Potencia)
+            and es_numero(factor.exponente)
+            and int(factor.exponente) == factor.exponente
+            and factor.exponente >= 0
+        ):
+            base = factor.base
+            exponente = int(factor.exponente)
+        else:
+            base = factor
+            exponente = 1
+
+        if exponente == 0:
+            continue
+
+        encontrado = False
+
+        for grupo in grupos:
+
+            if _mismo_termino(grupo[0], base):
+                grupo[1] += exponente
+                encontrado = True
+                break
+
+        if not encontrado:
+            grupos.append([base, exponente])
+
+    resultado = []
+
+    for base, exponente in grupos:
+
+        if exponente == 0:
+            continue
+
+        if exponente == 1:
+            resultado.append(base)
+        else:
+            resultado.append(Potencia(base, exponente))
+
+    return resultado
+
+
+def _construir_producto(coeficiente, factores):
+
+    if coeficiente == 0:
+        return 0
+
+    factores = _agrupar_factores(factores)
+
+    if len(factores) == 0:
+        return coeficiente
+
+    signo = -1 if coeficiente < 0 else 1
+    coeficiente = abs(coeficiente)
+
+    if coeficiente == 1:
+        resultado = factores[0]
+        inicio = 1
+    else:
+        resultado = Expresion("*", coeficiente, factores[0])
+        inicio = 1
+
+    for factor in factores[inicio:]:
+        resultado = Expresion("*", resultado, factor)
+
+    if signo < 0:
+        return crear_negativo(resultado)
+
+    return resultado
+
+
+def _normalizar_producto(valor):
+
+    signo, coeficiente, factores = _descomponer_producto(valor)
+
+    return _construir_producto(
+        signo * coeficiente,
+        factores
+    )
+
+
+def _combinar_terminos_semejantes(a, b):
+
+    signo_a, coef_a, factores_a = _descomponer_producto(a)
+    signo_b, coef_b, factores_b = _descomponer_producto(b)
+
+    factores_a = _agrupar_factores(factores_a)
+    factores_b = _agrupar_factores(factores_b)
+
+    if not _mismos_factores(factores_a, factores_b):
+        return None
+
+    coeficiente = signo_a * coef_a + signo_b * coef_b
+
+    return _construir_producto(coeficiente, factores_a)
+
 def _agrupar_factores_trigonometricos(factores):
     resultado = []
     grupos = []
@@ -326,11 +461,14 @@ def _agrupar_factores_trigonometricos(factores):
             continue
 
         tipo = type(base)
-        argumento = str(base.argumento)
+        argumento = base.argumento
         grupo_encontrado = None
 
         for grupo in grupos:
-            if grupo[0] == tipo and grupo[1] == argumento:
+            if (
+                grupo[0] == tipo
+                and _mismo_termino(grupo[1], argumento)
+            ):
                 grupo_encontrado = grupo
                 break
 
@@ -354,16 +492,31 @@ def _agrupar_factores_trigonometricos(factores):
 
     return resultado, cambio
 
-def _claves_factores(factores):
+def _mismos_factores(factores_a, factores_b):
 
-    claves = []
+    if len(factores_a) != len(factores_b):
+        return False
 
-    for factor in factores:
-        claves.append(str(factor))
+    utilizados = [False] * len(factores_b)
 
-    claves.sort()
+    for factor_a in factores_a:
 
-    return claves
+        encontrado = False
+
+        for i in range(len(factores_b)):
+
+            if (
+                not utilizados[i]
+                and _mismo_termino(factor_a, factores_b[i])
+            ):
+                utilizados[i] = True
+                encontrado = True
+                break
+
+        if not encontrado:
+            return False
+
+    return True
 
 
 def _terminos_equivalentes(a, b):
@@ -374,8 +527,7 @@ def _terminos_equivalentes(a, b):
     return (
         signo_a == signo_b
         and coef_a == coef_b
-        and _claves_factores(factores_a)
-            == _claves_factores(factores_b)
+        and _mismos_factores(factores_a, factores_b)
     )
 
 
@@ -387,8 +539,7 @@ def _terminos_opuestos(a, b):
     return (
         signo_a == -signo_b
         and coef_a == coef_b
-        and _claves_factores(factores_a)
-            == _claves_factores(factores_b)
+        and _mismos_factores(factores_a, factores_b)
     )
 
 
@@ -425,8 +576,10 @@ def _extraer_cuadrado_trig(factores):
 
             if (
                 type(primero) == type(segundo)
-                and str(primero.argumento)
-                == str(segundo.argumento)
+                and _mismo_termino(
+                    primero.argumento,
+                    segundo.argumento
+                )
             ):
 
                 restantes = []
@@ -467,14 +620,11 @@ def _identidad_pitagoras_factorizada(a, b):
     if tipo_a == tipo_b:
         return None
 
-    if str(argumento_a) != str(argumento_b):
-        return None
+    if not _mismo_termino(argumento_a, argumento_b):
+        return None 
 
     # El resto de los factores debe ser igual
-    if (
-        _claves_factores(restantes_a)
-        != _claves_factores(restantes_b)
-    ):
+    if not _mismos_factores(restantes_a, restantes_b):
         return None
 
     resultado = coef_a
@@ -503,11 +653,11 @@ def _identidad_pitagoras(a, b):
     """sin(x)^2 + cos(x)^2 -> 1 (en cualquier orden)."""
 
     if _es_potencia_trig(a, Sin) and _es_potencia_trig(b, Cos):
-        if str(a.base.argumento) == str(b.base.argumento):
+        if _mismo_termino(a.base.argumento, b.base.argumento):
             return 1
 
     if _es_potencia_trig(a, Cos) and _es_potencia_trig(b, Sin):
-        if str(a.base.argumento) == str(b.base.argumento):
+        if _mismo_termino(a.base.argumento, b.base.argumento):
             return 1
 
     return None
@@ -541,8 +691,7 @@ def _sin_indices(factores, i, j):
 
 
 def _mismo_par(p, q, r, s):
-    sp, sq, sr, ss = str(p), str(q), str(r), str(s)
-    return (sp == sr and sq == ss) or (sp == ss and sq == sr)
+    return ( (_mismo_termino(p, r) and _mismo_termino(q, s)) or (_mismo_termino(p, s) and _mismo_termino(q, r)))
 
 
 def _suma_trig_canonica(a, b):
@@ -610,7 +759,7 @@ def _sin_suma_resta(info_a, info_b, combinar):
     else:
         sin_b, cos_b = info_b[3], info_b[1]
 
-    if str(sin_a) == str(cos_b) and str(cos_a) == str(sin_b):
+    if _mismo_termino(sin_a, cos_b) and _mismo_termino(cos_a, sin_b):
         if combinar is crear_suma:
             return Sin(_suma_trig_canonica(sin_a, cos_a))
         return Sin(crear_resta(sin_a, cos_a))
@@ -651,7 +800,6 @@ def _identidad_suma_angulos(a, b, combinar):
 
         primero_a, segundo_a = factores_a[i_a], factores_a[j_a]
         restantes_a = _sin_indices(factores_a, i_a, j_a)
-        claves_restantes_a = _claves_factores(restantes_a)
 
         info_a = (
             type(primero_a), primero_a.argumento,
@@ -662,7 +810,7 @@ def _identidad_suma_angulos(a, b, combinar):
 
             restantes_b = _sin_indices(factores_b, i_b, j_b)
 
-            if claves_restantes_a != _claves_factores(restantes_b):
+            if not _mismos_factores(restantes_a, restantes_b):
                 continue
 
             primero_b, segundo_b = factores_b[i_b], factores_b[j_b]
@@ -744,17 +892,25 @@ def crear_resta(a, b):
     if es_cero(a):
         return crear_negativo(b)
 
-    if str(a) == str(b):
+    if _mismo_termino(a, b):
         return 0
 
-    # a - (-b) -> a + b
     if isinstance(b, Expresion) and b.operador == "neg":
         return crear_suma(a, b.izquierda)
+
+    semejantes = _combinar_terminos_semejantes(
+        a,
+        crear_negativo(b)
+    )
+
+    if semejantes is not None:
+        return semejantes
 
     if _terminos_equivalentes(a, b):
         return 0
 
     angulo = _identidad_suma_angulos(a, b, crear_resta)
+
     if angulo is not None:
         return angulo
 
@@ -772,13 +928,42 @@ def _potencia_info(valor):
 
 
 def _mismo_termino(x, y):
+
+    if es_numero(x) and es_numero(y):
+        return x == y
+
     if type(x) != type(y):
         return False
 
-    if isinstance(x, (Sin, Cos)):
-        return str(x.argumento) == str(y.argumento)
+    if isinstance(x, Syms):
+        return x.nombre == y.nombre
 
-    return str(x) == str(y)
+    if isinstance(x, (Sin, Cos)):
+        return _mismo_termino(
+            x.argumento,
+            y.argumento
+        )
+
+    if isinstance(x, Potencia):
+        return (
+            _mismo_termino(x.base, y.base)
+            and _mismo_termino(x.exponente, y.exponente)
+        )
+
+    if isinstance(x, Expresion):
+
+        if x.operador != y.operador:
+            return False
+
+        if not _mismo_termino(x.izquierda, y.izquierda):
+            return False
+
+        if x.derecha is None or y.derecha is None:
+            return x.derecha is None and y.derecha is None
+
+        return _mismo_termino(x.derecha, y.derecha)
+
+    return x is y
 
 
 def es_multiplicacion(expresion):
@@ -840,7 +1025,6 @@ def _terminos_aditivos(expresion, signo=1, salida=None):
 
 
 def _producto_distribuido(a, b):
-    """Distribuye a*b una sola vez, evitando expansion recursiva."""
 
     cantidad_a = _cantidad_terminos(a)
     cantidad_b = _cantidad_terminos(b)
@@ -851,192 +1035,185 @@ def _producto_distribuido(a, b):
     terminos_a = _terminos_aditivos(a)
     terminos_b = _terminos_aditivos(b)
 
-    resultado = None
+    resultado = []
 
     for signo_a, termino_a in terminos_a:
+
         for signo_b, termino_b in terminos_b:
-            termino = crear_multiplicacion(termino_a, termino_b)
+
+            termino = crear_multiplicacion(
+                termino_a,
+                termino_b
+            )
 
             if signo_a * signo_b == -1:
                 termino = crear_negativo(termino)
 
-            if resultado is None:
-                resultado = termino
-            else:
-                resultado = crear_suma(resultado, termino)
+            resultado.append(termino)
 
-    return resultado
+    return suma(*resultado)
 
 
 def crear_multiplicacion(a, b):
 
-    # Numerico por numerico
+    # Casos numericos, cero y uno
     if es_numero(a) and es_numero(b):
         return a * b
 
-    # Cero
     if es_cero(a) or es_cero(b):
         return 0
 
-    # Uno
     if es_uno(a):
         return b
 
     if es_uno(b):
         return a
 
-    # Signos: se normalizan antes de seguir trabajando.
-    signo_a, a_sin_signo = _extraer_signo(a)
-    signo_b, b_sin_signo = _extraer_signo(b)
-
-    if signo_a == -1 or signo_b == -1:
-        resultado = crear_multiplicacion(a_sin_signo, b_sin_signo)
-
-        if signo_a * signo_b == -1:
-            return crear_negativo(resultado)
-
-        return resultado
-
-    a = a_sin_signo
-    b = b_sin_signo
-
-    # Detectar productos y potencias anidados
-    if (
-        es_multiplicacion(a)
-        or es_multiplicacion(b)
-        or isinstance(a, Potencia)
-        or isinstance(b, Potencia)
-    ):
-        signo_a, coef_a, factores_a = _descomponer_producto(a)
-        signo_b, coef_b, factores_b = _descomponer_producto(b)
-
-        factores = factores_a + factores_b
-
-        factores, hubo_agrupacion = (
-            _agrupar_factores_trigonometricos(factores)
-        )
-
-        if hubo_agrupacion:
-            resultado = coef_a * coef_b
-
-            for factor in factores:
-                resultado = crear_multiplicacion(
-                    resultado, factor
-                )
-
-            if signo_a * signo_b == -1:
-                resultado = crear_negativo(resultado)
-
-            return resultado
-
-    # sin(x) * sin(x) -> sin(x)^2
-    # cos(x) * cos(x) -> cos(x)^2
-    if str(a) == str(b):
-        if isinstance(a, (Sin, Cos)):
-            return Potencia(a, 2)
-
-    # Si uno de los factores es una suma/resta, se intenta distribuir
-    # solamente cuando la expansion sigue siendo manejable.
+    # Distribuir solo cuando el crecimiento es controlable
     es_suma_a = isinstance(a, Expresion) and a.operador in ("+", "-")
     es_suma_b = isinstance(b, Expresion) and b.operador in ("+", "-")
 
     if es_suma_a or es_suma_b:
+
         expandido = _producto_distribuido(a, b)
 
         if expandido is not None:
             return expandido
 
-        # Si la expansion superaria el limite, se conserva la forma factorizada.
         return Expresion("*", a, b)
 
-    # Combinar factor numerico dentro de una multiplicacion.
-    if es_multiplicacion(a) and es_numero(b):
-        izquierda = a.izquierda
-        derecha = a.derecha
+    # Normalizar productos anidados
+    signo_a, coef_a, factores_a = _descomponer_producto(a)
+    signo_b, coef_b, factores_b = _descomponer_producto(b)
 
-        if es_numero(izquierda):
-            return crear_multiplicacion(izquierda * b, derecha)
+    coeficiente = signo_a * signo_b * coef_a * coef_b
 
-        if es_numero(derecha):
-            return crear_multiplicacion(izquierda, derecha * b)
+    factores = _agrupar_factores(
+        factores_a + factores_b
+    )
 
-    if es_multiplicacion(b) and es_numero(a):
-        izquierda = b.izquierda
-        derecha = b.derecha
+    return _construir_producto(coeficiente, factores)
 
-        if es_numero(izquierda):
-            return crear_multiplicacion(a * izquierda, derecha)
+def _simplificar_recursivo(expresion):
 
-        if es_numero(derecha):
-            return crear_multiplicacion(izquierda, a * derecha)
+    if es_numero(expresion) or isinstance(expresion, Syms):
+        return expresion
 
-    return Expresion("*", a, b)
+    # Seno
+    if isinstance(expresion, Sin):
+
+        argumento = _simplificar_recursivo(expresion.argumento)
+
+        return crear_seno(argumento)
+
+    # Coseno
+    if isinstance(expresion, Cos):
+
+        argumento = _simplificar_recursivo(expresion.argumento)
+
+        return crear_coseno(argumento)
+
+    # Potencia
+    if isinstance(expresion, Potencia):
+
+        base = _simplificar_recursivo(expresion.base)
+        exponente = _simplificar_recursivo(expresion.exponente)
+
+        if es_numero(exponente):
+
+            if exponente == 0:
+                return 1
+
+            if exponente == 1:
+                return base
+
+            if es_numero(base):
+                return base ** exponente
+
+            if (
+                isinstance(base, Potencia)
+                and es_numero(base.exponente)
+                and int(base.exponente) == base.exponente
+                and int(exponente) == exponente
+                and base.exponente >= 0
+                and exponente >= 0
+            ):
+                return Potencia(
+                    base.base,
+                    base.exponente * exponente
+                )
+
+        return Potencia(base, exponente)
+
+    # Expresiones algebraicas
+    if isinstance(expresion, Expresion):
+
+        izquierda = _simplificar_recursivo(
+            expresion.izquierda
+        )
+
+        if expresion.operador == "neg":
+            return crear_negativo(izquierda)
+
+        derecha = _simplificar_recursivo(
+            expresion.derecha
+        )
+
+        if expresion.operador == "+":
+            return suma(izquierda, derecha)
+
+        if expresion.operador == "-":
+            return suma(
+                izquierda,
+                crear_negativo(derecha)
+            )
+
+        if expresion.operador == "*":
+            return crear_multiplicacion(
+                izquierda,
+                derecha
+            )
+
+    raise TypeError(
+        "Tipo de expresion no soportado: " + str(type(expresion))
+    )
 
 
 def simplificar(expresion):
 
-    # Los numeros y simbolos ya estan en forma simple.
-    if not isinstance(expresion, (Expresion, Sin, Cos, Potencia)):
-        return expresion
+    resultado = expresion
 
-    # Negacion
-    if isinstance(expresion, Expresion) and expresion.operador == "neg":
-        izquierda = simplificar(expresion.izquierda)
+    # Repetir hasta estabilizar o alcanzar el limite
+    for _ in range(6):
 
-        if es_cero(izquierda):
-            return 0
+        anterior = resultado
 
-        return crear_negativo(izquierda)
+        resultado = _simplificar_recursivo(resultado)
 
-    # Potencia: solo se simplifica el interior de la base.
-    if isinstance(expresion, Potencia):
-        base = simplificar(expresion.base)
-        return Potencia(base, expresion.exponente)
+        if _mismo_termino(anterior, resultado):
+            break
 
-    # Sin
-    if isinstance(expresion, Sin):
-        argumento = simplificar(expresion.argumento)
-
-        if es_cero(argumento):
-            return 0
-
-        if isinstance(argumento, Expresion):
-            if argumento.operador == "neg":
-                return n(Sin(argumento.izquierda))
-
-        return Sin(argumento)
-
-    # Cos
-    if isinstance(expresion, Cos):
-        argumento = simplificar(expresion.argumento)
-
-        if es_cero(argumento):
-            return 1
-
-        if isinstance(argumento, Expresion):
-            if argumento.operador == "neg":
-                return Cos(argumento.izquierda)
-
-        return Cos(argumento)
-
-    # Expresiones binarias
-    izquierda = simplificar(expresion.izquierda)
-    derecha = simplificar(expresion.derecha)
-
-    if expresion.operador == "+":
-        return crear_suma(izquierda, derecha)
-
-    if expresion.operador == "-":
-        return crear_resta(izquierda, derecha)
-
-    if expresion.operador == "*":
-        return crear_multiplicacion(izquierda, derecha)
+    return resultado
 
 
 def _combinar(izquierda, derecha, operacion):
 
     directo = "__" + operacion + "__"
     reflejo = "__r" + operacion + "__"
+
+    if operacion == "mul":
+
+        izquierda_matriz = getattr(izquierda, "_es_matriz", False)
+        derecha_matriz = getattr(derecha, "_es_matriz", False)
+
+        if izquierda_matriz and derecha_matriz:
+            return izquierda.__mul__(derecha)
+
+        if izquierda_matriz:
+            return izquierda.multiplicar_escalar(derecha)
+
+        if derecha_matriz:
+            return derecha.multiplicar_escalar(izquierda, izquierda=True)
 
 
     if isinstance(izquierda, ExpresionSimbolica):
@@ -1129,14 +1306,18 @@ def _combinar_terminos_si_se_puede(x, y):
     if es_cero(y):
         return x
 
-    if _terminos_opuestos(x, y):
-        return 0
+    semejantes = _combinar_terminos_semejantes(x, y)
+
+    if semejantes is not None:
+        return semejantes
 
     pitagoras = _identidad_pitagoras_factorizada(x, y)
+
     if pitagoras is not None:
         return pitagoras
 
     pitagoras = _identidad_pitagoras(x, y)
+
     if pitagoras is not None:
         return pitagoras
 
@@ -1151,26 +1332,26 @@ def suma(*elementos):
     terminos = []
 
     for elemento in elementos:
-        _aplanar_suma(
-            elemento,
-            1,
-            terminos
-        )
+        _aplanar_suma(elemento, 1, terminos)
 
     pendientes = []
 
     for signo, termino in terminos:
 
+        termino = _normalizar_producto(termino)
+
         if es_cero(termino):
             continue
 
-        pendientes.append(
-            termino if signo == 1 else crear_negativo(termino)
-        )
+        if signo == -1:
+            termino = crear_negativo(termino)
+
+        pendientes.append(termino)
 
     if len(pendientes) == 0:
         return 0
 
+    # Combinar términos repetidamente
     while len(pendientes) > 1:
 
         se_fusionaron_dos = False
@@ -1180,18 +1361,22 @@ def suma(*elementos):
             for j in range(i + 1, len(pendientes)):
 
                 fusion = _combinar_terminos_si_se_puede(
-                    pendientes[i], pendientes[j]
+                    pendientes[i],
+                    pendientes[j]
                 )
 
                 if fusion is not None:
 
-                    pendientes = [
-                        pendientes[k]
-                        for k in range(len(pendientes))
-                        if k != i and k != j
-                    ]
+                    nuevos = []
 
-                    pendientes.append(fusion)
+                    for k in range(len(pendientes)):
+                        if k != i and k != j:
+                            nuevos.append(pendientes[k])
+
+                    if not es_cero(fusion):
+                        nuevos.append(_normalizar_producto(fusion))
+
+                    pendientes = nuevos
 
                     se_fusionaron_dos = True
                     break
@@ -1208,7 +1393,25 @@ def suma(*elementos):
     resultado = pendientes[0]
 
     for termino in pendientes[1:]:
-        resultado = crear_suma(resultado, termino)
+
+        if isinstance(termino, Expresion) and termino.operador == "neg":
+            resultado = crear_resta(
+                resultado,
+                termino.izquierda
+            )
+
+        elif es_numero(termino) and termino < 0:
+            resultado = crear_resta(
+                resultado,
+                -termino
+            )
+
+        else:
+            resultado = Expresion(
+                "+",
+                resultado,
+                termino
+            )
 
     return resultado
 
@@ -1218,9 +1421,9 @@ def resta(*elementos):
     if len(elementos) == 0:
         return None
 
-    resultado = elementos[0]
+    terminos = [elementos[0]]
 
     for elemento in elementos[1:]:
-        resultado = _combinar(resultado, elemento, "sub")
+        terminos.append(crear_negativo(elemento))
 
-    return resultado
+    return suma(*terminos)

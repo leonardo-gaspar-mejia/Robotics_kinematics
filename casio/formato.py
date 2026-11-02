@@ -7,7 +7,6 @@ from syms import (
     es_numero
 )
 
-
 def _nombre_compacto(nombre):
 
     if len(nombre) == 0:
@@ -163,17 +162,14 @@ def _unir_productos_compactos(izquierda, derecha):
     ultimo = izquierda[-1]
     primero = derecha[0]
 
-    es_letra_ultimo = (
-        ('a' <= ultimo <= 'z')
-        or ('A' <= ultimo <= 'Z')
-    )
+    es_letra_ultimo = (('a' <= ultimo <= 'z') or ('A' <= ultimo <= 'Z'))
+    es_letra_primero = (('a' <= primero <= 'z') or ('A' <= primero <= 'Z'))
 
-    es_letra_primero = (
-        ('a' <= primero <= 'z')
-        or ('A' <= primero <= 'Z')
-    )
+    es_digito_ultimo = '0' <= ultimo <= '9'
+    es_digito_primero = '0' <= primero <= '9'
 
-    if es_letra_ultimo and es_letra_primero:
+
+    if ((es_letra_ultimo or es_digito_ultimo) and (es_letra_primero or es_digito_primero)):
         return izquierda + "*" + derecha
 
     if primero == "-":
@@ -226,46 +222,17 @@ def texto_compacto(expresion, mapa=None):
 
     if isinstance(expresion, Potencia):
 
-        base = expresion.base
-
-        if isinstance(base, Expresion):
-
-            if (
-                base.operador == "+"
-                or base.operador == "-"
-            ):
-
-                base_texto = (
-                    "("
-                    + texto_compacto(
-                        base,
-                        mapa
-                    )
-                    + ")"
-                )
-
-            else:
-
-                base_texto = texto_compacto(
-                    base,
-                    mapa
-                )
-
-        else:
-
-            base_texto = texto_compacto(
-                base,
-                mapa
-            )
-
-        return (
-            base_texto
-            + "^"
-            + texto_compacto(
-                expresion.exponente,
-                mapa
-            )
+        base_texto = _compacto_base_potencia(
+            expresion.base,
+            mapa
         )
+
+        exponente_texto = _compacto_exponente_potencia(
+            expresion.exponente,
+            mapa
+        )
+
+        return base_texto + "^" + exponente_texto
 
     if isinstance(expresion, Expresion):
 
@@ -273,10 +240,7 @@ def texto_compacto(expresion, mapa=None):
 
             izquierda = expresion.izquierda
 
-            if isinstance(
-                izquierda,
-                Expresion
-            ):
+            if isinstance(izquierda, Expresion):
 
                 if (
                     izquierda.operador == "+"
@@ -366,3 +330,25 @@ def texto_compacto(expresion, mapa=None):
             )
 
     return str(expresion)
+
+def _compacto_base_potencia(expresion, mapa):
+
+    texto = texto_compacto(expresion, mapa)
+
+    if isinstance(expresion, (Expresion, Potencia)):
+        return "(" + texto + ")"
+
+    if es_numero(expresion) and expresion < 0:
+        return "(" + texto + ")"
+
+    return texto
+
+
+def _compacto_exponente_potencia(expresion, mapa):
+
+    texto = texto_compacto(expresion, mapa)
+
+    if isinstance(expresion, (Expresion, Potencia)):
+        return "(" + texto + ")"
+
+    return texto

@@ -1,26 +1,46 @@
-from syms import Syms, grados, negativo, pi
+from syms import Syms, grados, n, pi, crear_seno , crear_coseno, producto as pm 
 from rot import Des
-from matriz import Matriz
+from matriz import Matriz as mt
+from jacobiano import Jacobiano 
 
+s = crear_seno
+c = crear_coseno
 theta1 = Syms("theta1")
-y = Syms("y")
-z = Syms("z")
+theta2 = Syms("theta2")
+d3 = Syms("d3")
 
+l0 = Syms("l0")
 l1 = Syms("l1")
 l2 = Syms("l2")
 l3 = Syms("l3")
 
-DH = Matriz([[0, l1, 0, grados(90)],
-             [grados(90), l2, 0, grados(90)],
-             [0, l3, 0, 0],])
+DH = mt([[theta1, l0, l1, 0],
+             [theta2, 0, l2, 0],
+             [0, n(l3 + d3), 0, 0],])
 
-T03 = Des.DH_table(DH, False)
+T03 = Des.DH_table(DH)
+T03_inv = Des.nsad()
+T01 = Des.DH(theta1, l0, l1, 0)
+T12 = Des.DH(theta2,0,l2,0)
+T23 = Des.DH(0,n(l3+d3),0,0)
+T01_inv=Des.H_inv(T01)
+T01_inv.mostrar()
+T12_inv=Des.H_inv(T12)
+mt.p_m(T12_inv ,T01_inv,T03_inv).mostrar()
 
-T01 = Matriz([[1,0,0,0],
-              [0,0,-1,0],
-              [0,1,0,l1],
-              [0,0,0,1],])
+funciones = mt([
+    [T03[0, 3]],
+    [T03[1, 3]],
+    [T03[2, 3]],
+])
 
-T01.mostrar()
+variables = mt([
+    [theta1],
+    [theta2],
+    [d3],
+])
 
-T01.traspuesta().mostrar()
+J = Jacobiano(funciones, variables)
+
+J.mostrar()
+

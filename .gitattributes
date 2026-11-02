@@ -1,0 +1,11 @@
+# Normalizar los finales de linea para evitar diffs causados solo por CRLF/LF.
+* text=auto
+*.py text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.ini text eol=lf
+*.txt text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+LICENSE text eol=lf
