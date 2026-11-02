@@ -46,6 +46,25 @@ Versión que amplía la toolbox desde las operaciones matriciales y transformaci
 - El determinante admite orden N, pero la expansión por cofactores tiene crecimiento factorial en el peor caso y no es adecuada para matrices densas grandes en la calculadora.
 - KhiCAS/Xcas permanece como exploración externa; el núcleo no depende de él.
 
+## [1.2] - Mantenimiento
+
+### Corregido
+
+- Correcciones en `Des.Rot_lt()` y `Des.LT()`
+  para mejorar la coherencia de las operaciones
+  de construcción y extracción eje-ángulo.
+
+- Correcciones en `Des.Rot_RPY()`, conservando
+  la convención y el orden de parámetros de la
+  toolbox de referencia del Dr. Chávez.
+
+- Ajustes en el formato compacto de matrices
+  para mejorar su presentación en la Casio fx-CG50.
+
+### Eliminado
+
+- Se eliminó `Des.camara()` de la API de la librería.
+
 ## [1.1] - 2026-09-26
 
 Segunda versión orientada a mejorar la presentación de matrices simbólicas en la Casio fx-CG50, manteniendo el núcleo matemático de la versión 1.0.
@@ -143,6 +162,25 @@ This version extends the toolbox from matrix operations and transformations to l
 - Symbolic differentiation is deliberately limited and is not a general-purpose CAS.
 - Determinants support order N, but cofactor expansion has factorial worst-case growth and is not suitable for large dense matrices on the calculator.
 - KhiCAS/Xcas remains an external exploration; the core does not depend on it.
+
+## [1.2] - Maintenance
+
+### Fixed
+
+- Corrections to `Des.Rot_lt()` and `Des.LT()`
+  to improve consistency in axis-angle rotation
+  construction and extraction.
+
+- Corrections to `Des.Rot_RPY()`, preserving
+  the convention and parameter order of the
+  reference toolbox by Dr. Chávez.
+
+- Adjustments to compact matrix formatting
+  to improve presentation on the Casio fx-CG50.
+
+### Removed
+
+- Removed `Des.camara()` from the library API.
 
 ## [1.1] - 2026-09-26
 

@@ -12,7 +12,7 @@
 **Versión 1.2**  
 **Plataforma objetivo: Casio fx-CG50**
 
-[Documentación técnica en español](docs/README.md) | [Technical documentation in English](docs/en/README.md) | [Historial de cambios / Changelog](CHANGELOG.md)
+[Documentación técnica en español](docs/README.md) | [Technical documentation in English](docs/EN/README.md) | [Historial de cambios / Changelog](CHANGELOG.md)
 
 Toolbox ligera de matemáticas y robótica desarrollada para la **Casio fx-CG50**, inspirada en la toolbox utilizada en la enseñanza de robótica por el Dr. César Chávez.
 
@@ -280,11 +280,11 @@ Se priorizan las operaciones necesarias para el estudio de manipuladores robóti
 
 ## Documentación adicional
 
-- `docs/01_objetivos.md`: objetivos y alcance del proyecto.
-- `docs/02_plataforma.md`: plataforma objetivo, compatibilidad y limitaciones observadas.
-- `docs/03_arquitectura.md`: organización interna y responsabilidades de los módulos.
-- `docs/04_pruebas_presentacion.md`: pruebas y criterios de presentación matricial.
-- `docs/VERSION.md`: información de la versión documentada.
+- `docs/SPA-ES/01_objetivos.md`: objetivos y alcance del proyecto.
+- `docs/SPA-ES/02_plataforma.md`: plataforma objetivo, compatibilidad y limitaciones observadas.
+- `docs/SPA-ES/03_arquitectura.md`: organización interna y responsabilidades de los módulos.
+- `docs/SPA-ES/04_pruebas_presentacion.md`: pruebas y criterios de presentación matricial.
+- `docs/SPA-ES/VERSION.md`: información de la versión documentada.
 - `CHANGELOG.md`: historial de cambios entre versiones.
 
 ## Estado del proyecto
@@ -300,7 +300,7 @@ La versión 1.2 amplía el núcleo inicial con herramientas de derivación simb�
 **Version 1.2**  
 **Target platform: Casio fx-CG50**
 
-[Technical documentation in English](docs/en/README.md) | [Spanish technical documentation](docs/README.md) | [Changelog](CHANGELOG.md)
+[Technical documentation in English](docs/EN/README.md) | [Spanish technical documentation](docs/README.md) | [Changelog](CHANGELOG.md)
 
 A lightweight mathematics and robotics toolbox developed for the **Casio fx-CG50**, inspired by the robotics toolbox used in teaching by Dr. César Chávez.
 

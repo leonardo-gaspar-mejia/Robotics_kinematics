@@ -1,7 +1,9 @@
-# Colocar este archivo junto a matriz.py, syms.py, formato.py y rot.py.
-# Ejecutar en fx-CG50. No requiere pytest ni librerias externas.
+# Colocar este archivo junto a los siguientes seis modulos:
+# matriz.py, rot.py, derivadas.py, jacobiano.py, syms.py y formato.py.
+#
+# Ejecutar directamente en la fx-CG50.
+# No requiere pytest ni librerias externas.
 # Se puede borrar este archivo de la calculadora si todas las pruebas pasan.
-
 import math
 
 from matriz import Matriz, MAX_FILA_NIVEL0

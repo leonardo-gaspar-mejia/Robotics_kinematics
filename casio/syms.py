@@ -184,10 +184,16 @@ class Potencia(ExpresionSimbolica):
 def evaluar(expresion, valores=None):
     """
     Sustituye cada Syms por un numero y reduce toda la expresion a un
-    unico numero ('valores' es un diccionario {nombre: numero}, en
-    grados para los angulos que entren a Sin/Cos). Sirve tanto para
-    obtener un resultado final en la calculadora como para verificar
-    con casos concretos que una identidad simbolica es correcta.
+    unico numero.
+
+    'valores' es un diccionario {nombre: numero}. Los argumentos
+    numericos utilizados en Sin y Cos se interpretan en radianes.
+    Para convertir un angulo expresado en grados a radianes,
+    utiliza la funcion grados().
+
+    Sirve tanto para obtener un resultado final en la calculadora
+    como para verificar con casos concretos que una identidad
+    simbolica es correcta.
     """
 
     if valores is None:

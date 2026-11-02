@@ -14,11 +14,16 @@ l1 = Syms("l1")
 l2 = Syms("l2")
 l3 = Syms("l3")
 
-DH = mt([[theta1, l0, l1, 0],
-             [theta2, 0, l2, 0],
-             [0, n(l3 + d3), 0, 0],])
+DH = mt([[grados(30), 50, 35, 0],
+             [grados(60), 0, 30, 0],
+             [0, n(5 + 1.1), 0, 0],])
+
+DH2 = mt([[grados(-84.914), 50, 35, 0],
+             [grados(60), 0, 30, 0],
+             [0, n(5 + 1.1), 0, 0],])
 
 T03 = Des.DH_table(DH)
+T03 = Des.DH_table(DH2)
 T03_inv = Des.nsad()
 T01 = Des.DH(theta1, l0, l1, 0)
 T12 = Des.DH(theta2,0,l2,0)
