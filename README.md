@@ -12,7 +12,7 @@
 **Versión 1.2**  
 **Plataforma objetivo: Casio fx-CG50**
 
-[Documentación técnica en español](docs/README.md) | [Technical documentation in English](docs/EN/README.md) | [Historial de cambios / Changelog](CHANGELOG.md)
+[Documentación técnica en español](docs/SPA-ES/) | [Technical documentation in English](docs/EN/) | [Historial de cambios / Changelog](CHANGELOG.md)
 
 Toolbox ligera de matemáticas y robótica desarrollada para la **Casio fx-CG50**, inspirada en la toolbox utilizada en la enseñanza de robótica por el Dr. César Chávez.
 
@@ -300,7 +300,7 @@ La versión 1.2 amplía el núcleo inicial con herramientas de derivación simb�
 **Version 1.2**  
 **Target platform: Casio fx-CG50**
 
-[Technical documentation in English](docs/EN/README.md) | [Spanish technical documentation](docs/README.md) | [Changelog](CHANGELOG.md)
+[Technical documentation in English](docs/EN/) | [Spanish technical documentation](docs/SPA-ES) | [Changelog](CHANGELOG.md)
 
 A lightweight mathematics and robotics toolbox developed for the **Casio fx-CG50**, inspired by the robotics toolbox used in teaching by Dr. César Chávez.
 
