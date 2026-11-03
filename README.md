@@ -98,16 +98,7 @@ Incluye:
 - composición de tablas DH mediante `Des.DH_table()`;
 - cálculo de la inversa de una transformación homogénea mediante `Des.H_inv()`.
 
-La convención RPY implementada es:
-
-$$
-R_{RPY}(\phi,\theta,\psi)
-=
-R_z(\phi)R_y(\theta)R_x(\psi)
-$$
-
-
-El orden de composición forma parte de la definición de la función y no debe intercambiarse.
+El orden, la denominación y la convención de extracción de los parámetros siguen el conjunto de la Toolbox utilizada por el Dr. César Chávez. Se han conservado deliberadamente; no reordene ni reinterprete los ángulos obtenidos conforme a una convención RPY distinta.
 
 ### Derivación simbólica y Jacobiano
 
@@ -388,15 +379,6 @@ It includes:
 - Denavit–Hartenberg matrix construction through `Des.DH()`;
 - DH table composition through `Des.DH_table()`;
 - rigid homogeneous transformation inversion through `Des.H_inv()`.
-
-The implemented RPY composition is:
-
-$$
-R_{RPY}(\phi,\theta,\psi)
-=
-R_z(\phi)R_y(\theta)R_x(\psi)
-$$
-
 
 The parameter order, naming, and extraction convention follow the reference toolbox used by Dr. César Chávez. They are intentionally preserved; do not reorder or reinterpret the returned angles according to a different RPY convention.
 
