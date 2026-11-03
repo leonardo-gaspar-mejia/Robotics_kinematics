@@ -1,11 +1,4 @@
-from syms import (
-    Syms,
-    Sin,
-    Cos,
-    Potencia,
-    Expresion,
-    es_numero
-)
+from syms import (Syms,Sin,Cos,Potencia,Expresion,es_numero,radianes_a_grados,_redondear)
 
 def _nombre_compacto(nombre):
 
@@ -131,23 +124,58 @@ def crear_mapa_compacto(elementos):
     return mapa
 
 
-def _compacto_parentesis_suma(expresion, mapa):
+def _formatear_numero(valor, decimales=4):
 
-    if isinstance(expresion, Expresion):
+    texto = str(valor)
 
-        if (
-            expresion.operador == "+"
-            or expresion.operador == "-"
-        ):
-            return (
-                "("
-                + texto_compacto(expresion, mapa)
-                + ")"
-            )
+    if "e" in texto or "E" in texto:
+        separador = "e" if "e" in texto else "E"
+        mantisa, exponente = texto.split(separador, 1)
 
-    return texto_compacto(
-        expresion,
-        mapa
+        if "." in mantisa:
+            entero, decimal = mantisa.split(".", 1)
+            decimal = decimal[:decimales].rstrip("0")
+
+            if decimal:
+                mantisa = entero + "." + decimal
+            else:
+                mantisa = entero
+
+        return mantisa + separador + exponente
+
+    if "." not in texto:
+        return texto
+
+    entero, decimal = texto.split(".", 1)
+    decimal = decimal[:decimales].rstrip("0")
+
+    if not decimal:
+        if entero == "-0" or entero == "0":
+            return "0"
+        return entero
+
+    return entero + "." + decimal
+
+
+def _formatear_angulo(valor, compacto=False):
+
+    valor_grados = _redondear(
+        radianes_a_grados(valor)
+    )
+
+    texto = _formatear_numero(valor_grados)
+
+    if compacto:
+        return texto + "deg"
+
+    return texto + " deg"
+
+
+def _es_suma_resta(expresion):
+
+    return (
+        isinstance(expresion, Expresion)
+        and expresion.operador in ("+", "-")
     )
 
 
@@ -162,14 +190,23 @@ def _unir_productos_compactos(izquierda, derecha):
     ultimo = izquierda[-1]
     primero = derecha[0]
 
-    es_letra_ultimo = (('a' <= ultimo <= 'z') or ('A' <= ultimo <= 'Z'))
-    es_letra_primero = (('a' <= primero <= 'z') or ('A' <= primero <= 'Z'))
+    es_letra_ultimo = (
+        ("a" <= ultimo <= "z")
+        or ("A" <= ultimo <= "Z")
+    )
 
-    es_digito_ultimo = '0' <= ultimo <= '9'
-    es_digito_primero = '0' <= primero <= '9'
+    es_letra_primero = (
+        ("a" <= primero <= "z")
+        or ("A" <= primero <= "Z")
+    )
 
+    es_digito_ultimo = "0" <= ultimo <= "9"
+    es_digito_primero = "0" <= primero <= "9"
 
-    if ((es_letra_ultimo or es_digito_ultimo) and (es_letra_primero or es_digito_primero)):
+    if (
+        (es_letra_ultimo or es_digito_ultimo)
+        and (es_letra_primero or es_digito_primero)
+    ):
         return izquierda + "*" + derecha
 
     if primero == "-":
@@ -181,174 +218,298 @@ def _unir_productos_compactos(izquierda, derecha):
     return izquierda + derecha
 
 
-def texto_compacto(expresion, mapa=None):
+def _renderizar_argumento_trig(
+    expresion,
+    mapa,
+    compacto,
+    grados
+):
+    """
+    Formatea el argumento de Sin/Cos.
 
-    if mapa is None:
-        mapa = crear_mapa_compacto(
-            [expresion]
+    En modo grados convierte únicamente las constantes
+    que aparecen como términos aditivos.
+
+    Los coeficientes de productos permanecen en su
+    representación numérica original.
+    """
+
+    if not grados:
+        return _renderizar(
+            expresion,
+            mapa,
+            compacto,
+            False
         )
 
     if es_numero(expresion):
-        return str(expresion)
+        return _formatear_angulo(
+            expresion,
+            compacto
+        )
 
-    if isinstance(expresion, Syms):
+    if isinstance(expresion, Expresion):
+
+        operador = expresion.operador
+
+        if operador == "+":
+
+            izquierda = _renderizar_argumento_trig(
+                expresion.izquierda,
+                mapa,
+                compacto,
+                grados
+            )
+
+            derecha = _renderizar_argumento_trig(
+                expresion.derecha,
+                mapa,
+                compacto,
+                grados
+            )
+
+            separador = "+" if compacto else " + "
+
+            return izquierda + separador + derecha
+
+        if operador == "-":
+
+            izquierda = _renderizar_argumento_trig(
+                expresion.izquierda,
+                mapa,
+                compacto,
+                grados
+            )
+
+            derecha = _renderizar_argumento_trig(
+                expresion.derecha,
+                mapa,
+                compacto,
+                grados
+            )
+
+            if _es_suma_resta(expresion.derecha):
+                derecha = "(" + derecha + ")"
+
+            separador = "-" if compacto else " - "
+
+            return izquierda + separador + derecha
+
+        if operador == "neg":
+
+            izquierda = expresion.izquierda
+
+            if es_numero(izquierda):
+                return _formatear_angulo(
+                    -izquierda,
+                    compacto
+                )
+
+            texto = _renderizar_argumento_trig(
+                izquierda,
+                mapa,
+                compacto,
+                grados
+            )
+
+            if _es_suma_resta(izquierda):
+                return "-(" + texto + ")"
+
+            return "-" + texto
+
+    # Los productos, coeficientes y potencias se
+    # representan normalmente.
+    return _renderizar(
+        expresion,
+        mapa,
+        compacto,
+        grados
+    )
+
+
+def _nombre_simbolico(expresion, mapa, compacto):
+
+    if compacto:
 
         if expresion.nombre in mapa:
             return mapa[expresion.nombre]
 
         return expresion.nombre
 
+    return str(expresion)
+
+
+def _renderizar(
+    expresion,
+    mapa=None,
+    compacto=False,
+    grados=False
+):
+
+    if es_numero(expresion):
+        return _formatear_numero(expresion)
+
+    if isinstance(expresion, Syms):
+
+        return _nombre_simbolico(
+            expresion,
+            mapa,
+            compacto
+        )
+
     if isinstance(expresion, Sin):
 
-        return (
-            "s("
-            + texto_compacto(
-                expresion.argumento,
-                mapa
-            )
-            + ")"
+        argumento = _renderizar_argumento_trig(
+            expresion.argumento,
+            mapa,
+            compacto,
+            grados
         )
+
+        nombre = "s" if compacto else "sin"
+
+        return nombre + "(" + argumento + ")"
 
     if isinstance(expresion, Cos):
 
-        return (
-            "c("
-            + texto_compacto(
-                expresion.argumento,
-                mapa
-            )
-            + ")"
+        argumento = _renderizar_argumento_trig(
+            expresion.argumento,
+            mapa,
+            compacto,
+            grados
         )
+
+        nombre = "c" if compacto else "cos"
+
+        return nombre + "(" + argumento + ")"
 
     if isinstance(expresion, Potencia):
 
-        base_texto = _compacto_base_potencia(
+        base = _renderizar(
             expresion.base,
-            mapa
+            mapa,
+            compacto,
+            grados
         )
 
-        exponente_texto = _compacto_exponente_potencia(
+        exponente = _renderizar(
             expresion.exponente,
-            mapa
+            mapa,
+            compacto,
+            grados
         )
 
-        return base_texto + "^" + exponente_texto
+        if isinstance(expresion.base, (Expresion, Potencia)):
+            base = "(" + base + ")"
+
+        elif es_numero(expresion.base) and expresion.base < 0:
+            base = "(" + base + ")"
+
+        if isinstance(expresion.exponente, (Expresion, Potencia)):
+            exponente = "(" + exponente + ")"
+
+        return base + "^" + exponente
 
     if isinstance(expresion, Expresion):
 
-        if expresion.operador == "neg":
+        operador = expresion.operador
+
+        if operador == "neg":
 
             izquierda = expresion.izquierda
 
-            if isinstance(izquierda, Expresion):
-
-                if (
-                    izquierda.operador == "+"
-                    or izquierda.operador == "-"
-                ):
-
-                    return (
-                        "-("
-                        + texto_compacto(
-                            izquierda,
-                            mapa
-                        )
-                        + ")"
-                    )
-
-            return (
-                "-"
-                + texto_compacto(
-                    izquierda,
-                    mapa
-                )
-            )
-
-        if expresion.operador == "*":
-
-            izquierda = _compacto_parentesis_suma(
-                expresion.izquierda,
-                mapa
-            )
-
-            derecha = _compacto_parentesis_suma(
-                expresion.derecha,
-                mapa
-            )
-
-            return _unir_productos_compactos(
+            texto = _renderizar(
                 izquierda,
-                derecha
+                mapa,
+                compacto,
+                grados
             )
 
-        if expresion.operador == "+":
+            if _es_suma_resta(izquierda):
+                return "-(" + texto + ")"
 
-            return (
-                texto_compacto(
-                    expresion.izquierda,
-                    mapa
-                )
-                + "+"
-                + texto_compacto(
-                    expresion.derecha,
-                    mapa
-                )
-            )
+            return "-" + texto
 
-        if expresion.operador == "-":
+        if operador == "*":
 
-            izquierda = texto_compacto(
+            izquierda = _renderizar(
                 expresion.izquierda,
-                mapa
+                mapa,
+                compacto,
+                grados
             )
 
-            derecha = texto_compacto(
+            derecha = _renderizar(
                 expresion.derecha,
-                mapa
+                mapa,
+                compacto,
+                grados
             )
 
-            if isinstance(
-                expresion.derecha,
-                Expresion
-            ):
+            if _es_suma_resta(expresion.izquierda):
+                izquierda = "(" + izquierda + ")"
 
-                if (
-                    expresion.derecha.operador == "+"
-                    or expresion.derecha.operador == "-"
-                ):
+            if _es_suma_resta(expresion.derecha):
+                derecha = "(" + derecha + ")"
 
-                    derecha = (
-                        "("
-                        + derecha
-                        + ")"
-                    )
+            if compacto:
+                return _unir_productos_compactos(
+                    izquierda,
+                    derecha
+                )
 
-            return (
-                izquierda
-                + "-"
-                + derecha
-            )
+            return izquierda + " * " + derecha
+
+        izquierda = _renderizar(
+            expresion.izquierda,
+            mapa,
+            compacto,
+            grados
+        )
+
+        derecha = _renderizar(
+            expresion.derecha,
+            mapa,
+            compacto,
+            grados
+        )
+
+        if operador == "+":
+
+            separador = "+" if compacto else " + "
+
+            return izquierda + separador + derecha
+
+        if operador == "-":
+
+            if _es_suma_resta(expresion.derecha):
+                derecha = "(" + derecha + ")"
+
+            separador = "-" if compacto else " - "
+
+            return izquierda + separador + derecha
 
     return str(expresion)
 
-def _compacto_base_potencia(expresion, mapa):
 
-    texto = texto_compacto(expresion, mapa)
+def texto_compacto(expresion, mapa=None, grados=False):
 
-    if isinstance(expresion, (Expresion, Potencia)):
-        return "(" + texto + ")"
+    if mapa is None:
+        mapa = crear_mapa_compacto([expresion])
 
-    if es_numero(expresion) and expresion < 0:
-        return "(" + texto + ")"
+    return _renderizar(
+        expresion,
+        mapa,
+        True,
+        grados
+    )
 
-    return texto
 
+def texto_completo(expresion, grados=False):
 
-def _compacto_exponente_potencia(expresion, mapa):
-
-    texto = texto_compacto(expresion, mapa)
-
-    if isinstance(expresion, (Expresion, Potencia)):
-        return "(" + texto + ")"
-
-    return texto
+    return _renderizar(
+        expresion,
+        None,
+        False,
+        grados
+    )

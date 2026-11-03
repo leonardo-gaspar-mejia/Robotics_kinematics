@@ -1,8 +1,8 @@
 """Pruebas automaticas basicas de formato y presentacion."""
 
-from formato import texto_compacto
+from formato import texto_compacto, texto_completo
 from matriz import Matriz
-from syms import Potencia, Syms, crear_coseno, producto
+from syms import Potencia, Syms, crear_coseno, producto, suma, grados, n
 
 
 def test_formato_compacto_de_productos_y_trigonometria():
@@ -34,3 +34,86 @@ def test_mostrar_matriz_imprime_contenido(capsys):
 
     assert "[1, 2]" in salida
     assert "[3, 4]" in salida
+
+def test_truncamiento_numerico():
+
+    assert texto_completo(1.234567) == "1.2345"
+    assert texto_completo(2.500000) == "2.5"
+
+
+def test_constante_angular_en_grados():
+
+    theta = Syms("theta1")
+
+    expresion = crear_coseno(
+        suma(theta, n(grados(90)))
+    )
+
+    assert texto_completo(
+        expresion,
+        grados=True
+    ) == "cos(theta1 - 90 deg)"
+
+
+def test_constante_angular_en_radianes():
+
+    theta = Syms("theta1")
+
+    expresion = crear_coseno(
+        suma(theta, n(grados(90)))
+    )
+
+    assert texto_completo(
+        expresion
+    ) == "cos(theta1 - 1.5707)"
+
+
+def test_coeficiente_no_se_convierte_a_grados():
+
+    theta = Syms("theta1")
+
+    expresion = crear_coseno(
+        suma(
+            producto(0.5, theta),
+            grados(45)
+        )
+    )
+
+    resultado = texto_completo(
+        expresion,
+        grados=True
+    )
+
+    assert resultado == "cos(0.5 * theta1 + 45 deg)"
+
+
+def test_formateo_no_modifica_expresion():
+
+    theta = Syms("theta1")
+
+    expresion = crear_coseno(
+        suma(theta, n(grados(90)))
+    )
+
+    original = str(expresion)
+
+    texto_completo(expresion, grados=True)
+
+    assert str(expresion) == original
+
+
+def test_mostrar_matriz_en_grados(capsys):
+
+    theta = Syms("theta1")
+
+    expresion = crear_coseno(
+        suma(theta, n(grados(90)))
+    )
+
+    matriz = Matriz([[expresion]])
+
+    matriz.mostrar(True)
+
+    salida = capsys.readouterr().out
+
+    assert "90 deg" in salida

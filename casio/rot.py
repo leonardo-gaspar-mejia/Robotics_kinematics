@@ -339,7 +339,7 @@ class Des:
             [0,         0,         0,         1]
         ])
 
-    def DH_table(DH_t, mostrar = True):
+    def DH_table(DH_t, grados=False ,mostrar = True):
 
         if DH_t.columnas != 4:
             raise ValueError("La tabla DH carece de argumentos(Argumentos necesrios por fila 4)")
@@ -364,13 +364,13 @@ class Des:
 
             if mostrar:
                 print("\nT" + str(i) + str(i + 1) + " =")
-                T_i.mostrar()
+                T_i.mostrar(grados)
 
             T = Matriz.p_m(T, T_i)
 
         if mostrar:
             print("\nT0" + str(DH_t.filas) + " =")
-            T.mostrar()
+            T.mostrar(grados)
 
         return T
 

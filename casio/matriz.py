@@ -1,5 +1,5 @@
 from syms import suma, resta, producto, es_cero, es_uno, evaluar, simplificar as simplificar_expresion, ExpresionSimbolica, _mismo_termino
-from formato import texto_compacto, crear_mapa_compacto
+from formato import texto_compacto, crear_mapa_compacto, texto_completo
 
 
 MAX_FILA_NIVEL0 = 509
@@ -276,7 +276,7 @@ class Matriz:
     # REPRESENTACION NIVEL 0
     # =========================================================
 
-    def _textos_completos(self):
+    def _textos_completos(self, grados=False):
 
         textos = []
 
@@ -287,7 +287,10 @@ class Matriz:
             for j in range(self.columnas):
 
                 fila.append(
-                    str(self[i, j])
+                    texto_completo(
+                        self[i, j],
+                        grados=grados
+                    )
                 )
 
             textos.append(fila)
@@ -373,7 +376,7 @@ class Matriz:
         return elementos
 
 
-    def _textos_compactos(self):
+    def _textos_compactos(self, grados=False):
 
         elementos = self._elementos_matriz()
 
@@ -394,7 +397,8 @@ class Matriz:
                 fila.append(
                     texto_compacto(
                         elementos[indice],
-                        mapa
+                        mapa,
+                        grados=grados
                     )
                 )
 
@@ -468,9 +472,9 @@ class Matriz:
     # MOSTRAR AUTOMATICO
     # =========================================================
 
-    def mostrar(self):
+    def mostrar(self, grados=False):
 
-        textos = self._textos_completos()
+        textos = self._textos_completos(grados)
 
         for i in range(self.filas):
 
@@ -488,7 +492,7 @@ class Matriz:
                 # -------------------------------------------------
 
                 textos_compactos = (
-                    self._textos_compactos()
+                    self._textos_compactos(grados)
                 )
 
                 self._mostrar_nivel1(
