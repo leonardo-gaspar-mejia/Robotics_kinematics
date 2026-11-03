@@ -100,9 +100,12 @@ Incluye:
 
 La convención RPY implementada es:
 
-\[
-R_{RPY}(\phi,\theta,\psi)=R_z(\phi)R_y(\theta)R_x(\psi)
-\]
+$$
+R_{RPY}(\phi,\theta,\psi)
+=
+R_z(\phi)R_y(\theta)R_x(\psi)
+$$
+
 
 El orden de composición forma parte de la definición de la función y no debe intercambiarse.
 
@@ -388,9 +391,12 @@ It includes:
 
 The implemented RPY composition is:
 
-\[
-R_{RPY}(\phi,\theta,\psi)=R_z(\phi)R_y(\theta)R_x(\psi)
-\]
+$$
+R_{RPY}(\phi,\theta,\psi)
+=
+R_z(\phi)R_y(\theta)R_x(\psi)
+$$
+
 
 The parameter order, naming, and extraction convention follow the reference toolbox used by Dr. César Chávez. They are intentionally preserved; do not reorder or reinterpret the returned angles according to a different RPY convention.
 
